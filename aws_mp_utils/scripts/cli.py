@@ -21,11 +21,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+import logging
+import sys
+
 import click
 
-from aws_mp_utils.cli.container import container
-from aws_mp_utils.cli.image import image
-from aws_mp_utils.cli.offer import offer
+from aws_mp_utils.changeset import get_change_set
+from aws_mp_utils.scripts.container import container
+from aws_mp_utils.scripts.image import image
+from aws_mp_utils.scripts.offer import offer
+from aws_mp_utils.scripts.cli_utils import (
+    add_options,
+    get_config,
+    process_shared_options,
+    shared_options,
+    echo_style,
+    get_mp_client
+)
 
 
 # -----------------------------------------------------------------------------
@@ -59,6 +72,44 @@ def main(context):
     if context.obj is None:
         context.obj = {}
     pass
+
+
+# -----------------------------------------------------------------------------
+@main.command
+@click.option(
+    '--change-set-id',
+    type=click.STRING,
+    required=True,
+    help='The unique identifier for the change set that you want to describe.'
+)
+@add_options(shared_options)
+@click.pass_context
+def describe_change_set(
+    context,
+    change_set_id,
+    **kwargs
+):
+    process_shared_options(context.obj, kwargs)
+    config_data = get_config(context.obj)
+    logger = logging.getLogger('aws_mp_utils')
+    logger.setLevel(config_data.log_level)
+
+    client = get_mp_client(
+        config_data.profile,
+        config_data.region
+    )
+    try:
+        change_set = get_change_set(client, change_set_id)
+    except Exception as e:
+        echo_style(
+            'Unable to get change set',
+            config_data.no_color,
+            fg='red'
+        )
+        echo_style(str(e), config_data.no_color, fg='red')
+        sys.exit(1)
+
+    echo_style(json.dumps(change_set), config_data.no_color, fg='green')
 
 
 main.add_command(image)
