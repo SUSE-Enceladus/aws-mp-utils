@@ -34,3 +34,18 @@ def get_change_set(client: boto3.client, change_set_id: str) -> dict:
         ChangeSetId=change_set_id
     )
     return response
+
+
+def get_change_set_status(
+    client: boto3.client,
+    change_set_id: str
+) -> str:
+    """Gets the status of the changeset"""
+    response = get_change_set(
+        client,
+        change_set_id
+    )
+    if response and 'Status' in response:
+        # 'Status':'PREPARING'|'APPLYING'|'SUCCEEDED'|'CANCELLED'|'FAILED'
+        status = response['Status'].lower()
+        return status

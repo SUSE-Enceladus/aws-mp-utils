@@ -1,6 +1,9 @@
 from unittest.mock import Mock
 
-from aws_mp_utils.changeset import get_change_set
+from aws_mp_utils.changeset import (
+    get_change_set,
+    get_change_set_status,
+)
 
 
 def test_get_change_set():
@@ -31,3 +34,27 @@ def test_get_change_set():
 
     response = get_change_set(client, '123')
     assert response['ChangeSetId'] == '123'
+
+
+def test_get_change_set_status():
+    response = {
+        'Status': 'SUCCEEDED',
+        'ChangeSet': [
+            {
+                'ChangeType': 'string',
+                'Entity': {
+                    'Type': 'string',
+                    'Identifier': 'string'
+                },
+                'Details': 'string',
+                'DetailsDocument': {'changeset': 'details'},
+                'ChangeName': 'string'
+            },
+        ]
+    }
+
+    client = Mock()
+    client.describe_change_set.return_value = response
+
+    response = get_change_set_status(client, '123')
+    assert response == 'succeeded'

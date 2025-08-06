@@ -69,3 +69,39 @@ def test_describe_change_set(mock_client):
     result = runner.invoke(main, args)
     assert result.exit_code == 1
     assert '403: Auth failure!' in result.output
+
+
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.cli.get_mp_client')
+@patch('aws_mp_utils.scripts.cli.get_change_set_status')
+def test_get_change_set_status(mock_status, mock_client):
+    """Confirm get change set status"""
+    mock_status.return_value = 'success'
+
+    args = [
+        'get-change-set-status',
+        '--config-file', 'tests/data/config.yaml',
+        '--change-set-id', '12345',
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'success' in result.output
+
+    mock_status.return_value = 'applying'
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'applying' in result.output
+
+    mock_status.return_value = 'failed'
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'failed' in result.output
+
+    # Simulate failure in boto3
+    mock_status.side_effect = Exception('403: Auth failure!')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert '403: Auth failure!' in result.output
