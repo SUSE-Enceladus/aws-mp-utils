@@ -84,7 +84,8 @@ def add_options(options):
 # Get Config
 def get_config(cli_context):
     """
-    Process Azure Image utils config.
+    Process AWS MP utils config.
+
     Use ChainMap to build config values based on
     command line args, config and defaults.
     """
