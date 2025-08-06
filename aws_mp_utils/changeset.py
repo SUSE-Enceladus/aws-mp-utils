@@ -20,3 +20,17 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import boto3
+
+
+def get_change_set(client: boto3.client, change_set_id: str) -> dict:
+    """
+    Returns a dictionary containing changeset information
+    The changeset is found based on the id.
+    """
+    response = client.describe_change_set(
+        Catalog='AWSMarketplace',
+        ChangeSetId=change_set_id
+    )
+    return response
