@@ -58,7 +58,6 @@ data['Details'] = json.dumps(details)
 start_changeset_params = {
     'Catalog': 'AWSMarketplace',
     'ChangeSet': [data],
-    'Intent': 'APPLY'
 }
 
 

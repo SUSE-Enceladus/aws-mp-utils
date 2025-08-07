@@ -25,7 +25,6 @@ def test_restrict_version(
         '--config-file', 'tests/data/config.yaml',
         '--entity-id', '00000000-0000-4000-8000-000000000001',
         '--ami-id', 'ami-12345',
-        '--intent', 'VALIDATE',
         '--max-rechecks', 10,
         '--conflict-wait-period', 300,
         '--no-color'

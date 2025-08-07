@@ -53,13 +53,6 @@ def image():
 # -----------------------------------------------------------------------------
 @image.command
 @click.option(
-    '--intent',
-    type=click.Choice(['VALIDATE', 'APPLY']),
-    help='To test your request before applying changes to your entities, use '
-         'VALIDATE. The default is APPLY. This feature is currently available'
-         ' for adding versions to single-AMI products.'
-)
-@click.option(
     '--max-rechecks',
     type=click.IntRange(min=0),
     help='The maximum number of checks that are performed when a marketplace '
@@ -93,7 +86,6 @@ def restrict_version(
     entity_id,
     conflict_wait_period,
     max_rechecks,
-    intent,
     **kwargs
 ):
     process_shared_options(context.obj, kwargs)
@@ -134,8 +126,6 @@ def restrict_version(
         options['max_rechecks'] = max_rechecks
     if conflict_wait_period:
         options['conflict_wait_period'] = conflict_wait_period
-    if intent:
-        options['intent'] = intent
 
     try:
         response = start_mp_change_set(**options)

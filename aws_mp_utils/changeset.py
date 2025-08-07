@@ -139,7 +139,6 @@ def create_add_version_change_doc(
 def start_mp_change_set(
     client: boto3.client,
     change_set: list,
-    intent: str = 'APPLY',
     max_rechecks: int = 10,
     conflict_wait_period: int = 1800
 ) -> dict:
@@ -160,7 +159,6 @@ def start_mp_change_set(
             response = client.start_change_set(
                 Catalog='AWSMarketplace',
                 ChangeSet=change_set,
-                Intent=intent
             )
             return response
 
