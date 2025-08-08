@@ -94,8 +94,17 @@ def create_add_version_change_doc(
     os_version: str,
     usage_instructions: str,
     recommended_instance_type: str,
-    ssh_user: str,
+    ssh_user: str = 'ec2-user',
+    ingress_rules: list = None,
 ) -> dict:
+    if not ingress_rules:
+        ingress_rules = [{
+            'FromPort': 22,
+            'IpProtocol': 'tcp',
+            'IpRanges': ['0.0.0.0/0'],
+            'ToPort': 22
+        }]
+
     data = {
         'ChangeType': 'AddDeliveryOptions',
         'Entity': {
@@ -121,12 +130,7 @@ def create_add_version_change_doc(
                         'OperatingSystemName': os_name,
                         'OperatingSystemVersion': os_version
                     },
-                    'SecurityGroups': [{
-                        'FromPort': 22,
-                        'IpProtocol': 'tcp',
-                        'IpRanges': ['0.0.0.0/0'],
-                        'ToPort': 22
-                    }]
+                    'SecurityGroups': ingress_rules
                 }
             }
         }]
