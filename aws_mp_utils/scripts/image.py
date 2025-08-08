@@ -90,6 +90,15 @@ def restrict_version(
     max_rechecks,
     **kwargs
 ):
+    """
+    Starts a change set to restrict the image version based on the AMI ID
+
+    If there is a conflicting change set the submission will be retried
+    based on the wait period and max rechecks.
+
+    If the conflicting change set is not resolved in time an exception
+    is raised.
+    """
     process_shared_options(context.obj, kwargs)
     config_data = get_config(context.obj)
     logger = logging.getLogger('aws_mp_utils')
@@ -247,6 +256,18 @@ def add_version(
     max_rechecks,
     **kwargs
 ):
+    """
+    Starts a change set to include the AMI ID to the image product
+
+    A new version change set is submitted with the provided arguments
+    for the given entity.
+
+    If there is a conflicting change set the submission will be retried
+    based on the wait period and max rechecks.
+
+    If the conflicting change set is not resolved in time an exception
+    is raised.
+    """
     process_shared_options(context.obj, kwargs)
     config_data = get_config(context.obj)
     logger = logging.getLogger('aws_mp_utils')

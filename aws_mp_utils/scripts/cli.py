@@ -70,7 +70,7 @@ def main(context):
     """
     The command line interface provides AWS Marketplace Catalog utilities.
 
-    This includes handling changesets for images, containers and offers.
+    This includes handling change sets for images, containers and offers.
     """
     if context.obj is None:
         context.obj = {}
@@ -92,6 +92,9 @@ def describe_change_set(
     change_set_id,
     **kwargs
 ):
+    """
+    Returns a json dictionary with info about the given changeset.
+    """
     process_shared_options(context.obj, kwargs)
     config_data = get_config(context.obj)
     logger = logging.getLogger('aws_mp_utils')
@@ -130,6 +133,12 @@ def describe_change_set_status(
     change_set_id,
     **kwargs
 ):
+    """
+    Returns a string value of the given change set status.
+
+    Possible status values are:
+        'PREPARING'|'APPLYING'|'SUCCEEDED'|'CANCELLED'|'FAILED'
+    """
     process_shared_options(context.obj, kwargs)
     config_data = get_config(context.obj)
     logger = logging.getLogger('aws_mp_utils')
