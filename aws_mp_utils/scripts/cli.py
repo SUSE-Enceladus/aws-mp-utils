@@ -23,7 +23,6 @@
 
 import json
 import logging
-import sys
 
 import click
 
@@ -40,7 +39,8 @@ from aws_mp_utils.scripts.cli_utils import (
     process_shared_options,
     shared_options,
     echo_style,
-    get_mp_client
+    get_mp_client,
+    handle_errors
 )
 
 
@@ -104,16 +104,9 @@ def describe_change_set(
         config_data.profile,
         config_data.region
     )
-    try:
+
+    with handle_errors(config_data.log_level, config_data.no_color):
         change_set = get_change_set(client, change_set_id)
-    except Exception as e:
-        echo_style(
-            'Unable to get change set',
-            config_data.no_color,
-            fg='red'
-        )
-        echo_style(str(e), config_data.no_color, fg='red')
-        sys.exit(1)
 
     echo_style(json.dumps(change_set), config_data.no_color, fg='green')
 
@@ -148,16 +141,9 @@ def describe_change_set_status(
         config_data.profile,
         config_data.region
     )
-    try:
+
+    with handle_errors(config_data.log_level, config_data.no_color):
         status = get_change_set_status(client, change_set_id)
-    except Exception as e:
-        echo_style(
-            'Unable to get change set status',
-            config_data.no_color,
-            fg='red'
-        )
-        echo_style(str(e), config_data.no_color, fg='red')
-        sys.exit(1)
 
     if status in ('preparing', 'applying'):
         color = 'yellow'

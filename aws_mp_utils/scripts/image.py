@@ -22,7 +22,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import sys
 
 import click
 
@@ -39,7 +38,8 @@ from aws_mp_utils.scripts.cli_utils import (
     shared_options,
     echo_style,
     get_mp_client,
-    ingress_rule_repl
+    ingress_rule_repl,
+    handle_errors
 )
 
 
@@ -108,20 +108,12 @@ def restrict_version(
         config_data.profile,
         config_data.region
     )
-    try:
+    with handle_errors(config_data.log_level, config_data.no_color):
         delivery_option_id = get_image_delivery_option_id(
             client,
             entity_id,
             ami_id
         )
-    except Exception as error:
-        echo_style(
-            'Unable to get delivery option id for the given product.',
-            config_data.no_color,
-            fg='red'
-        )
-        echo_style(str(error), config_data.no_color, fg='red')
-        sys.exit(1)
 
     change_doc = create_restrict_version_change_doc(
         entity_id,
@@ -138,16 +130,8 @@ def restrict_version(
     if conflict_wait_period:
         options['conflict_wait_period'] = conflict_wait_period
 
-    try:
+    with handle_errors(config_data.log_level, config_data.no_color):
         response = start_mp_change_set(**options)
-    except Exception as error:
-        echo_style(
-            'Unable to start change set',
-            config_data.no_color,
-            fg='red'
-        )
-        echo_style(str(error), config_data.no_color, fg='red')
-        sys.exit(1)
 
     output = f'Change set Id: {response["ChangeSetId"]}'
     echo_style(output, config_data.no_color, fg='green')
@@ -312,16 +296,8 @@ def add_version(
     if conflict_wait_period:
         start_cs_options['conflict_wait_period'] = conflict_wait_period
 
-    try:
+    with handle_errors(config_data.log_level, config_data.no_color):
         response = start_mp_change_set(**start_cs_options)
-    except Exception as error:
-        echo_style(
-            'Unable to start change set',
-            config_data.no_color,
-            fg='red'
-        )
-        echo_style(str(error), config_data.no_color, fg='red')
-        sys.exit(1)
 
     output = f'Change set Id: {response["ChangeSetId"]}'
     echo_style(output, config_data.no_color, fg='green')
