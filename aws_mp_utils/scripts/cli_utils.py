@@ -6,6 +6,7 @@ import click
 import yaml
 
 from collections import ChainMap, namedtuple
+from contextlib import contextmanager
 
 from aws_mp_utils.auth import get_client, get_session
 
@@ -157,3 +158,84 @@ def get_mp_client(profile, region):
         region,
         session
     )
+
+
+# -----------------------------------------------------------------------------
+def ingress_rule_repl():
+    """
+    Read eval and print loop to get a list of ingress rules
+
+    The rules are added to automatically created security groups.
+    """
+    rules = []
+    while True:
+        rule = {
+            'ip_ranges': []
+        }
+        if click.confirm('Add an ingress rule?'):
+            rule['FromPort'] = click.prompt(
+                'Enter the source port ',
+                type=click.IntRange(min=1, max=65535),
+                default=22
+            )
+            rule['ToPort'] = click.prompt(
+                'Enter the destination port ',
+                type=click.IntRange(min=1, max=65535),
+                default=22
+            )
+            rule['IpProtocol'] = click.prompt(
+                'Enter the IP protocol (tcp or udp)',
+                type=click.Choice(['tcp', 'udp']),
+                default='tcp'
+            )
+            rule['ip_ranges'] = ip_range_repl()
+            rules.append(rule)
+        else:
+            break
+
+    return rules
+
+
+def ip_range_repl():
+    """
+    Read eval and print loop to get a list of ip ranges
+
+    The ip ranges are added to the ingress rule.
+    """
+    ip_ranges = [ip_range_prompt()]
+
+    while True:
+        if click.confirm('Add another IP range?'):
+            ip_ranges.append(ip_range_prompt())
+        else:
+            break
+
+    return ip_ranges
+
+
+def ip_range_prompt():
+    """Prompt for an IP range and return the user input."""
+    return click.prompt(
+        'Enter an IP range (CIDR format xxx.xxx.xxx.xxx/nn)',
+        type=str,
+        default='0.0.0.0/0'
+    )
+
+
+@contextmanager
+def handle_errors(log_level, no_color):
+    """
+    Context manager to handle exceptions and echo error msg.
+    """
+    try:
+        yield
+    except Exception as error:
+        if log_level == logging.DEBUG:
+            raise
+
+        echo_style(
+            "{}: {}".format(type(error).__name__, error),
+            no_color,
+            fg='red'
+        )
+        sys.exit(1)

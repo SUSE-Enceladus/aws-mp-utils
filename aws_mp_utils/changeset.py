@@ -94,8 +94,17 @@ def create_add_version_change_doc(
     os_version: str,
     usage_instructions: str,
     recommended_instance_type: str,
-    ssh_user: str,
+    ssh_user: str = 'ec2-user',
+    ingress_rules: list = None,
 ) -> dict:
+    if not ingress_rules:
+        ingress_rules = [{
+            'FromPort': 22,
+            'IpProtocol': 'tcp',
+            'IpRanges': ['0.0.0.0/0'],
+            'ToPort': 22
+        }]
+
     data = {
         'ChangeType': 'AddDeliveryOptions',
         'Entity': {
@@ -121,12 +130,7 @@ def create_add_version_change_doc(
                         'OperatingSystemName': os_name,
                         'OperatingSystemVersion': os_version
                     },
-                    'SecurityGroups': [{
-                        'FromPort': 22,
-                        'IpProtocol': 'tcp',
-                        'IpRanges': ['0.0.0.0/0'],
-                        'ToPort': 22
-                    }]
+                    'SecurityGroups': ingress_rules
                 }
             }
         }]
@@ -260,3 +264,123 @@ def get_image_delivery_option_id(
     )
 
     return delivery_option_id
+
+
+def gen_add_delivery_options_changeset(
+    entity_id: str,
+    version_title: str,
+    release_notes: str,
+    delivery_option_title: str,
+    compatible_services: list,
+    container_images: list,
+    helm_chart_uri: str,
+    helm_chart_description: str,
+    usage_instructions: str,
+    quick_launch_enabled: bool,
+    marketplace_service_account_name: str,
+    release_name: str,
+    namespace: str,
+    override_parameters: list
+) -> dict:
+    """
+    Function to generate a marketplace changeset of AddDeliveryOptions type
+    https://docs.aws.amazon.com/marketplace-catalog/latest/api-reference/
+    container-products.html#working-with-container-products
+    """
+
+    data = {
+        'ChangeType': 'AddDeliveryOptions',
+        'Entity': {
+            'Type': 'ContainerProduct@1.0',
+            'Identifier': entity_id
+        }
+    }
+
+    details = {
+        'Version': {
+            'VersionTitle': version_title,
+            'ReleaseNotes': release_notes
+        },
+        'DeliveryOptions': [{
+            'DeliveryOptionTitle': delivery_option_title,
+            'Details': {
+                'HelmDeliveryOptionDetails': {
+                    'CompatibleServices': compatible_services,
+                    'ContainerImages': container_images,
+                    'HelmChartUri': helm_chart_uri,
+                    'Description': helm_chart_description,
+                    'UsageInstructions': usage_instructions,
+                    'QuickLaunchEnabled': quick_launch_enabled,
+                    'MarketplaceServiceAccountName':
+                        marketplace_service_account_name,
+                    'ReleaseName': release_name,
+                    'Namespace': namespace,
+                    'OverrideParameters': override_parameters
+                }
+            }
+        }]
+    }
+
+    data['Details'] = json.dumps(details)
+    return [data]
+
+
+def gen_update_delivery_options_changeset(
+    entity_id: str,
+    version_title: str,
+    release_notes: str,
+    delivery_option_title: str,
+    compatible_services: list,
+    container_images: list,
+    helm_chart_uri: str,
+    helm_chart_description: str,
+    usage_instructions: str,
+    quick_launch_enabled: bool,
+    marketplace_service_account_name: str,
+    release_name: str,
+    namespace: str,
+    override_parameters: list,
+    delivery_option_id: str
+) -> dict:
+    """
+    Function to generate a marketplace changeset of UpdateDeliveryOptions
+    type https://docs.aws.amazon.com/marketplace-catalog/latest/
+    api-reference/container-products.html#working-with-container-products
+    """
+
+    data = {
+        'ChangeType': 'UpdateDeliveryOptions',
+        'Entity': {
+            'Type': 'ContainerProduct@1.0',
+            'Identifier': entity_id
+        }
+    }
+
+    details = {
+        'Version': {
+            'VersionTitle': version_title,
+            'ReleaseNotes': release_notes
+        },
+        'DeliveryOptions': [{
+            'Id': delivery_option_id,
+            'Details': {
+                'HelmDeliveryOptionDetails': {
+                    'DeliveryOptionTitle': delivery_option_title,
+                    'CompatibleServices': compatible_services,
+                    'ContainerImages': container_images,
+                    'HelmChartUri': helm_chart_uri,
+                    'Description': helm_chart_description,
+                    'UsageInstructions': usage_instructions,
+                    'QuickLaunchEnabled': quick_launch_enabled,
+                    'MarketplaceServiceAccountName':
+                        marketplace_service_account_name,
+                    'ReleaseName': release_name,
+                    'Namespace': namespace,
+                    'OverrideParameters': override_parameters
+                }
+            }
+        }]
+    }
+
+    data['Details'] = json.dumps(details)
+    return [data]
