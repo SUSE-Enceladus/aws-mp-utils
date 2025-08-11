@@ -266,6 +266,47 @@ def get_image_delivery_option_id(
     return delivery_option_id
 
 
+def get_helm_delivery_option_id(
+    client: boto3.client,
+    entity_id: str,
+    version_title: str
+) -> str:
+    """
+    Provides the id of the delivery option to be updated. The id of
+    the delivery option is selected from the version of the product
+    that matches the version_title provided. The delivery option is
+    the first delivery option of the type 'Helm' in that version.
+    Example describe entity output:
+    {
+        "Details": {
+            "Versions": [
+                {
+                    "VersionTitle": "Product 1.2.3",
+                    "DeliveryOptions": [
+                        {
+                            "Id": "4321",
+                            "Type": "Helm"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+    """
+    entity = client.describe_entity(
+        Catalog='AWSMarketplace',
+        EntityId=entity_id
+    )
+    details = entity['DetailsDocument']
+
+    result = jmespath.search(
+        f"Versions[?VersionTitle=='{version_title}'] | [0]"
+        ".DeliveryOptions[?Type=='Helm'] | [0].Id",
+        details
+    )
+    return result
+
+
 def gen_add_delivery_options_changeset(
     entity_id: str,
     version_title: str,
@@ -322,7 +363,7 @@ def gen_add_delivery_options_changeset(
     }
 
     data['Details'] = json.dumps(details)
-    return [data]
+    return data
 
 
 def gen_update_delivery_options_changeset(
@@ -383,4 +424,4 @@ def gen_update_delivery_options_changeset(
     }
 
     data['Details'] = json.dumps(details)
-    return [data]
+    return data
