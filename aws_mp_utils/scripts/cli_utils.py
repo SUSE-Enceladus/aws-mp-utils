@@ -6,6 +6,7 @@ import click
 import yaml
 
 from collections import ChainMap, namedtuple
+from contextlib import contextmanager
 
 from aws_mp_utils.auth import get_client, get_session
 
@@ -219,3 +220,22 @@ def ip_range_prompt():
         type=str,
         default='0.0.0.0/0'
     )
+
+
+@contextmanager
+def handle_errors(log_level, no_color):
+    """
+    Context manager to handle exceptions and echo error msg.
+    """
+    try:
+        yield
+    except Exception as error:
+        if log_level == logging.DEBUG:
+            raise
+
+        echo_style(
+            "{}: {}".format(type(error).__name__, error),
+            no_color,
+            fg='red'
+        )
+        sys.exit(1)
