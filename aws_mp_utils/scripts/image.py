@@ -25,12 +25,12 @@ import logging
 
 import click
 
-from aws_mp_utils.changeset import (
+from aws_mp_utils.image import (
     get_image_delivery_option_id,
     create_add_version_change_doc,
-    create_restrict_version_change_doc,
-    start_mp_change_set
+    create_restrict_version_change_doc
 )
+from aws_mp_utils.changeset import start_mp_change_set
 from aws_mp_utils.scripts.cli_utils import (
     add_options,
     get_config,
