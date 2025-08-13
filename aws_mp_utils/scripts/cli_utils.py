@@ -196,6 +196,59 @@ def ingress_rule_repl():
     return rules
 
 
+def override_parameters_repl(quick_launch_enabled: bool, no_color: bool):
+    """
+    Read eval and print loop to get an object of override parameters
+
+    If quick launch is enabled the metadata is also required for
+    each parameter.
+    """
+    parameters = []
+    while True:
+        parameter = {}
+        if click.confirm('Add an override parameter?'):
+            parameter['Key'] = click.prompt(
+                'Enter the key (override.example.key)',
+                type=str
+            )
+
+            parameter['DefaultValue'] = click.prompt(
+                'Enter the default value',
+                type=str
+            )
+
+            if quick_launch_enabled:
+                parameter['Metadata'] = metadata_repl(no_color)
+            elif click.confirm('Add metadata?'):
+                parameter['Metadata'] = metadata_repl(no_color)
+
+            parameters.append(parameter)
+        else:
+            break
+
+    return parameters
+
+
+def metadata_repl(no_color):
+    """
+    Read eval and print loop to get metadata
+
+    The metadata is added to an override parameter
+    """
+    metadata = {}
+    metadata['Label'] = click.prompt(
+        'Enter the name of the field',
+        type=str
+    )
+    metadata['Description'] = click.prompt(
+        'Enter the description of the field',
+        type=str
+    )
+    metadata['Obfuscate'] = click.confirm('Obfuscate parameter?')
+
+    return metadata
+
+
 def ip_range_repl():
     """
     Read eval and print loop to get a list of ip ranges

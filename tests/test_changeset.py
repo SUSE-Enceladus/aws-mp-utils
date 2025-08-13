@@ -13,6 +13,7 @@ from aws_mp_utils.changeset import (
     create_add_version_change_doc,
     create_restrict_version_change_doc,
     get_image_delivery_option_id,
+    get_helm_delivery_option_id,
     gen_add_delivery_options_changeset,
     gen_update_delivery_options_changeset
 )
@@ -333,6 +334,46 @@ def test_get_image_delivery_option_id():
     assert did is None
 
 
+def test_get_helm_delivery_option_id():
+    details = {
+        "Versions": [
+            {
+                "VersionTitle": "Product 1.2.3",
+                "DeliveryOptions": [
+                    {
+                        "Id": "4321",
+                        "Type": "Helm"
+                    }
+                ]
+            }
+        ]
+    }
+
+    entity = {
+        'DetailsDocument': details
+    }
+    client = Mock()
+    client.describe_entity.return_value = entity
+
+    did = get_helm_delivery_option_id(
+        client,
+        '1234589',
+        'Product 1.2.3',
+    )
+    assert did == '4321'
+
+    # Test no image match found
+    details['Versions'][0]['VersionTitle'] = 'Product 1.2.4'
+    entity['Details'] = json.dumps(details)
+
+    did = get_helm_delivery_option_id(
+        client,
+        '1234589',
+        'Product 1.2.3',
+    )
+    assert did is None
+
+
 def test_gen_add_delivery_options_changeset():
     response = gen_add_delivery_options_changeset(
         '123',
@@ -361,8 +402,8 @@ def test_gen_add_delivery_options_changeset():
             }
         ]
     )
-    assert 'Details' in response[0]
-    assert response[0]['ChangeType'] == 'AddDeliveryOptions'
+    assert 'Details' in response
+    assert response['ChangeType'] == 'AddDeliveryOptions'
 
 
 def test_gen_update_delivery_options_changeset():
@@ -394,5 +435,5 @@ def test_gen_update_delivery_options_changeset():
         ],
         '123-321'
     )
-    assert 'Details' in response[0]
-    assert response[0]['ChangeType'] == 'UpdateDeliveryOptions'
+    assert 'Details' in response
+    assert response['ChangeType'] == 'UpdateDeliveryOptions'
