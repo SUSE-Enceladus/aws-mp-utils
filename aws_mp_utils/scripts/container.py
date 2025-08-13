@@ -25,11 +25,11 @@ import logging
 
 import click
 
-from aws_mp_utils.changeset import (
+from aws_mp_utils.container import (
     gen_add_delivery_options_changeset,
-    gen_update_delivery_options_changeset,
-    start_mp_change_set
+    gen_update_delivery_options_changeset
 )
+from aws_mp_utils.changeset import start_mp_change_set
 from aws_mp_utils.scripts.cli_utils import (
     add_options,
     get_config,
