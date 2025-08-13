@@ -278,17 +278,16 @@ def add_version(
     '--release-name',
     type=click.STRING,
     help='The name for the Helm release provided to the helm install command.',
-    required=True
 )
 @click.option(
     '--marketplace-service-account-name',
     type=click.STRING,
     help='The name of the Kubernetes service account.',
-    required=True
 )
 @click.option(
-    '--quick-launch-enabled',
+    '--quick-launch-enabled/--quick-launch-disabled',
     is_flag=True,
+    default=None,
     help='If buyers can use QuickLaunch to launch the software.'
 )
 @click.option(
@@ -303,13 +302,11 @@ def add_version(
     type=click.STRING,
     help='A longer description of the delivery option to give '
          'details to your buyer',
-    required=True
 )
 @click.option(
     '--helm-chart-uri',
     type=click.STRING,
     help='The URL to the Helm chart hosted in Amazon ECR.',
-    required=True
 )
 @click.option(
     '--container-image',
@@ -317,7 +314,6 @@ def add_version(
     multiple=True,
     type=click.STRING,
     help='Container image URLs used by this version.',
-    required=True
 )
 @click.option(
     '--compatible-service',
@@ -326,27 +322,23 @@ def add_version(
     type=click.Choice(['ECS', 'EKS']),
     help='Services that the release is compatible with. '
          'Valid options are ECS and EKS.',
-    required=True
 )
 @click.option(
     '--delivery-option-title',
     type=click.STRING,
     help='A short description that allows your buyer to '
          'choose between your delivery options',
-    required=True
 )
 @click.option(
     '--release-notes',
     type=click.STRING,
     help='Notes for buyers to tell them about changes from '
          'one version to the next.',
-    required=True
 )
 @click.option(
     '--version-title',
     type=click.STRING,
     help='The title to be displayed for the version.',
-    required=True
 )
 @click.option(
     '--entity-id',
