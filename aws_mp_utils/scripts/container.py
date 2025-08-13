@@ -322,6 +322,7 @@ def add_version(
 @click.option(
     '--compatible-service',
     'compatible_services',
+    multiple=True,
     type=click.Choice(['ECS', 'EKS']),
     help='Services that the release is compatible with. '
          'Valid options are ECS and EKS.',
