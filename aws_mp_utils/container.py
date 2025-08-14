@@ -129,20 +129,20 @@ def gen_add_delivery_options_changeset(
 
 def gen_update_delivery_options_changeset(
     entity_id: str,
-    version_title: str,
-    release_notes: str,
-    delivery_option_title: str,
-    compatible_services: list,
-    container_images: list,
-    helm_chart_uri: str,
-    helm_chart_description: str,
-    usage_instructions: str,
-    quick_launch_enabled: bool,
-    marketplace_service_account_name: str,
-    release_name: str,
-    namespace: str,
-    override_parameters: list,
-    delivery_option_id: str
+    delivery_option_id: str,
+    version_title: str = None,
+    release_notes: str = None,
+    delivery_option_title: str = None,
+    compatible_services: list = None,
+    container_images: list = None,
+    helm_chart_uri: str = None,
+    helm_chart_description: str = None,
+    usage_instructions: str = None,
+    quick_launch_enabled: bool = None,
+    marketplace_service_account_name: str = None,
+    release_name: str = None,
+    namespace: str = None,
+    override_parameters: list = None
 ) -> dict:
     """
     Function to generate a marketplace changeset of UpdateDeliveryOptions
@@ -158,31 +158,62 @@ def gen_update_delivery_options_changeset(
         }
     }
 
-    details = {
-        'Version': {
-            'VersionTitle': version_title,
-            'ReleaseNotes': release_notes
-        },
-        'DeliveryOptions': [{
-            'Id': delivery_option_id,
-            'Details': {
-                'HelmDeliveryOptionDetails': {
-                    'DeliveryOptionTitle': delivery_option_title,
-                    'CompatibleServices': compatible_services,
-                    'ContainerImages': container_images,
-                    'HelmChartUri': helm_chart_uri,
-                    'Description': helm_chart_description,
-                    'UsageInstructions': usage_instructions,
-                    'QuickLaunchEnabled': quick_launch_enabled,
-                    'MarketplaceServiceAccountName':
-                        marketplace_service_account_name,
-                    'ReleaseName': release_name,
-                    'Namespace': namespace,
-                    'OverrideParameters': override_parameters
+    version = {}
+    helm_details = {}
+    details = {}
+
+    if version_title:
+        version['VersionTitle'] = version_title
+
+    if release_notes:
+        version['ReleaseNotes'] = release_notes
+
+    if version:
+        details['Version'] = version
+
+    if delivery_option_title:
+        helm_details['DeliveryOptionTitle'] = delivery_option_title
+
+    if compatible_services:
+        helm_details['CompatibleServices'] = compatible_services
+
+    if container_images:
+        helm_details['ContainerImages'] = container_images
+
+    if helm_chart_uri:
+        helm_details['HelmChartUri'] = helm_chart_uri
+
+    if helm_chart_description:
+        helm_details['Description'] = helm_chart_description
+
+    if usage_instructions:
+        helm_details['UsageInstructions'] = usage_instructions
+
+    if quick_launch_enabled is not None:
+        helm_details['QuickLaunchEnabled'] = quick_launch_enabled
+
+    if marketplace_service_account_name:
+        helm_details['MarketplaceServiceAccountName'] = \
+            marketplace_service_account_name
+
+    if release_name:
+        helm_details['ReleaseName'] = release_name
+
+    if namespace:
+        helm_details['Namespace'] = namespace
+
+    if override_parameters:
+        helm_details['OverrideParameters'] = override_parameters
+
+    if helm_details:
+        details['DeliveryOptions'] = [
+            {
+                'Id': delivery_option_id,
+                'Details': {
+                    'HelmDeliveryOptionDetails': helm_details
                 }
             }
-        }]
-    }
+        ]
 
     data['Details'] = json.dumps(details)
     return data
