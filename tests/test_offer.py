@@ -37,7 +37,7 @@ def test_create_update_offer_change_doc():
     assert expected == actual
 
 
-def get_ami_ids_in_mp_entity():
+def test_get_ami_ids_in_mp_entity():
     details = {
         "Versions": [
             {
