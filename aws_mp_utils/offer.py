@@ -22,6 +22,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+import boto3
+import jmespath
 
 
 def create_update_offer_change_doc(
@@ -61,3 +63,44 @@ def create_update_offer_change_doc(
 
     data['Details'] = json.dumps(details)
     return data
+
+
+def get_ami_ids_in_mp_entity(
+    client: boto3.client,
+    entity_id: str
+):
+    """Provides the ami-ids in the versions for an offer"""
+    entity = client.describe_entity(
+        Catalog='AWSMarketplace',
+        EntityId=entity_id
+    )
+
+    """
+    Example describe entity output:
+    {
+        "Details": {
+            "Versions": [
+                {
+                    "Sources": [
+                        {
+                            "Image": "ami-123",
+                            "Id": "1234"
+                        }
+                    ],
+                    "DeliveryOptions": [
+                        ...
+                    ]
+                }
+            ]
+        }
+    }
+    """
+
+    ami_ids = []
+    details = entity['DetailsDocument']
+
+    ami_ids = jmespath.search(
+        "Versions[].Sources[].Image",
+        details
+    )
+    return ami_ids
