@@ -4,7 +4,8 @@ from unittest.mock import Mock
 
 from aws_mp_utils.image import (
     create_restrict_version_change_doc,
-    get_image_delivery_option_id
+    get_image_delivery_option_id,
+    get_images_details
 )
 
 
@@ -68,3 +69,27 @@ def test_get_image_delivery_option_id():
         'ami-123',
     )
     assert did is None
+
+
+def test_get_images_details():
+    expected_images = [
+        {
+          'Name': 'image_1',
+            'State': 'active',
+            'OwnerId': '12345'
+        },
+        {
+            'Name': 'image_2',
+            'State': 'inactive',
+            'OwnerId': '54321'
+        }
+    ]
+    describe_images_response = {
+        'Images': expected_images
+    }
+    client = Mock()
+    client.describe_images.return_value = describe_images_response
+    ami_ids = ['ami-12345', 'ami-67890']
+    images = get_images_details(client=client, ami_ids=ami_ids)
+    assert images == expected_images
+    client.describe_images.assert_called_once_with(ImageIds=ami_ids)
