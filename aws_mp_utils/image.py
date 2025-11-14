@@ -174,4 +174,3 @@ def get_images_details(
     )
 
     return response.get('Images', [])
-

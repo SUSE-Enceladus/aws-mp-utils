@@ -74,7 +74,7 @@ def test_get_image_delivery_option_id():
 def test_get_images_details():
     expected_images = [
         {
-          'Name': 'image_1',
+            'Name': 'image_1',
             'State': 'active',
             'OwnerId': '12345'
         },
