@@ -160,3 +160,17 @@ def get_image_delivery_option_id(
     )
 
     return delivery_option_id
+
+
+def get_images_details(
+    client: boto3.client,
+    ami_ids: list[str]
+) -> dict:
+    """
+    Returns the details for the ami-ids provided.
+    """
+    response = client.describe_images(
+        ImageIds=ami_ids
+    )
+
+    return response.get('Images', [])
