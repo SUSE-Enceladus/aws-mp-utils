@@ -106,7 +106,8 @@ def get_ami_ids_in_mp_entity(
     details = entity['DetailsDocument']
 
     if only_public_delivery_option:
-        query = "Versions[?DeliveryOptions[?Visibility=='Public']].Sources[].Image"   #  NOQA
+        query = \
+            "Versions[?DeliveryOptions[?Visibility=='Public']].Sources[].Image"
     else:
         query = "Versions[].Sources[].Image"
 
