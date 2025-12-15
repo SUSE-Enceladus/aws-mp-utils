@@ -67,9 +67,15 @@ def create_update_offer_change_doc(
 
 def get_ami_ids_in_mp_entity(
     client: boto3.client,
-    entity_id: str
-):
-    """Provides the ami-ids in the versions for an offer"""
+    entity_id: str,
+    only_public_delivery_option: bool = False
+) -> list[str]:
+    """
+    Provides the ami-ids in the versions for an offer.
+
+    If only_public_delivery_option is True, it only returns AMIs from versions
+    with a 'Public' delivery option.
+    """
     entity = client.describe_entity(
         Catalog='AWSMarketplace',
         EntityId=entity_id
@@ -88,6 +94,7 @@ def get_ami_ids_in_mp_entity(
                         }
                     ],
                     "DeliveryOptions": [
+                        {"Visibility": "Public"},
                         ...
                     ]
                 }
@@ -96,11 +103,15 @@ def get_ami_ids_in_mp_entity(
     }
     """
 
-    ami_ids = []
     details = entity['DetailsDocument']
 
-    ami_ids = jmespath.search(
-        "Versions[].Sources[].Image",
-        details
-    )
+    if only_public_delivery_option:
+        query = "Versions[?DeliveryOptions[?Visibility=='Public']].Sources[].Image"   #  NOQA
+    else:
+        query = "Versions[].Sources[].Image"
+
+    ami_ids = jmespath.search(query, details)
+
+    if ami_ids is None:
+        return []
     return ami_ids
