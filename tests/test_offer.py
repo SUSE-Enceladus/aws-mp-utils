@@ -50,7 +50,8 @@ def test_get_ami_ids_in_mp_entity():
                 "DeliveryOptions": [
                     {
                         "Id": "4321",
-                        "SourceId": "1234"
+                        "SourceId": "1234",
+                        "Visibility": "Public"
                     }
                 ]
             },
@@ -64,7 +65,8 @@ def test_get_ami_ids_in_mp_entity():
                 "DeliveryOptions": [
                     {
                         "Id": "4322",
-                        "SourceId": "1233"
+                        "SourceId": "1233",
+                        "Visibility": "Restricted"
                     }
                 ]
             },
@@ -78,7 +80,8 @@ def test_get_ami_ids_in_mp_entity():
                 "DeliveryOptions": [
                     {
                         "Id": "4323",
-                        "SourceId": "1232"
+                        "SourceId": "1232",
+                        "Visibility": "Public"
                     }
                 ]
             }
@@ -94,6 +97,20 @@ def test_get_ami_ids_in_mp_entity():
 
     ami_ids = get_ami_ids_in_mp_entity(
         client,
-        '1234589'
+        '1234589',
+        visibility_filter=''
     )
     assert ami_ids == ['ami-123', 'ami-456', 'ami-789']
+
+    ami_ids = get_ami_ids_in_mp_entity(
+        client,
+        '1234589'
+    )
+    assert ami_ids == ['ami-123', 'ami-789']
+
+    ami_ids = get_ami_ids_in_mp_entity(
+        client,
+        '1234589',
+        visibility_filter='Restricted'
+    )
+    assert ami_ids == ['ami-456']
