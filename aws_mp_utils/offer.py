@@ -68,13 +68,14 @@ def create_update_offer_change_doc(
 def get_ami_ids_in_mp_entity(
     client: boto3.client,
     entity_id: str,
-    only_public_delivery_option: bool = False
+    visibility_filter: str = 'Public',
 ) -> list[str]:
     """
     Provides the ami-ids in the versions for an offer.
 
-    If only_public_delivery_option is True, it only returns AMIs from versions
-    with a 'Public' delivery option.
+    If visibility_filter is set, it only returns AMIs from versions
+    with a delivery option matching the visibility filter. If the empty string
+    is provided as visiblity_filter no filter is applied.
     """
     entity = client.describe_entity(
         Catalog='AWSMarketplace',
@@ -105,9 +106,11 @@ def get_ami_ids_in_mp_entity(
 
     details = entity['DetailsDocument']
 
-    if only_public_delivery_option:
-        query = \
-            "Versions[?DeliveryOptions[?Visibility=='Public']].Sources[].Image"
+    if visibility_filter:
+        query = (
+            "Versions[?DeliveryOptions["
+            f"?Visibility=='{visibility_filter}']].Sources[].Image"
+        )
     else:
         query = "Versions[].Sources[].Image"
 

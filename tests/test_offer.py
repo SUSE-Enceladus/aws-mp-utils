@@ -97,13 +97,20 @@ def test_get_ami_ids_in_mp_entity():
 
     ami_ids = get_ami_ids_in_mp_entity(
         client,
-        '1234589'
+        '1234589',
+        visibility_filter=''
     )
     assert ami_ids == ['ami-123', 'ami-456', 'ami-789']
 
     ami_ids = get_ami_ids_in_mp_entity(
         client,
-        '1234589',
-        only_public_delivery_option=True
+        '1234589'
     )
     assert ami_ids == ['ami-123', 'ami-789']
+
+    ami_ids = get_ami_ids_in_mp_entity(
+        client,
+        '1234589',
+        visibility_filter='Restricted'
+    )
+    assert ami_ids == ['ami-456']
