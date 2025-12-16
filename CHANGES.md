@@ -1,4 +1,4 @@
-v0.0.3 (2025-12-16)
+v0.1.0 (2025-12-16)
 ===================
 
 - Includes a filtering param in the get_ami_ids_in_mp_entity function
