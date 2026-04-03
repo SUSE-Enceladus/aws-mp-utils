@@ -80,10 +80,17 @@ def image():
     required=True,
     help='The EC2 image ID for the version to be restricted.'
 )
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
 @add_options(shared_options)
 @click.pass_context
 def restrict_version(
     context,
+    catalog,
     ami_id,
     entity_id,
     conflict_wait_period,
@@ -122,7 +129,8 @@ def restrict_version(
 
     options = {
         'client': client,
-        'change_set': [change_doc]
+        'change_set': [change_doc],
+        'catalog': catalog
     }
 
     if max_rechecks:
@@ -221,10 +229,17 @@ def restrict_version(
     help='The EC2 image ID for the version to be restricted.',
     required=True
 )
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
 @add_options(shared_options)
 @click.pass_context
 def add_version(
     context,
+    catalog,
     ami_id,
     entity_id,
     version_title,
@@ -288,7 +303,8 @@ def add_version(
 
     start_cs_options = {
         'client': client,
-        'change_set': [change_doc]
+        'change_set': [change_doc],
+        'catalog': catalog
     }
     if max_rechecks:
         start_cs_options['max_rechecks'] = max_rechecks

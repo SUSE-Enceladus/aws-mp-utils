@@ -85,10 +85,17 @@ def main(context):
     required=True,
     help='The unique identifier for the change set that you want to describe.'
 )
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
 @add_options(shared_options)
 @click.pass_context
 def describe_change_set(
     context,
+    catalog,
     change_set_id,
     **kwargs
 ):
@@ -106,7 +113,7 @@ def describe_change_set(
     )
 
     with handle_errors(config_data.log_level, config_data.no_color):
-        change_set = get_change_set(client, change_set_id)
+        change_set = get_change_set(client, change_set_id, catalog)
 
     echo_style(json.dumps(change_set), config_data.no_color, fg='green')
 
@@ -119,10 +126,17 @@ def describe_change_set(
     required=True,
     help='The unique identifier for the change set that you want to describe.'
 )
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
 @add_options(shared_options)
 @click.pass_context
 def describe_change_set_status(
     context,
+    catalog,
     change_set_id,
     **kwargs
 ):
@@ -143,7 +157,7 @@ def describe_change_set_status(
     )
 
     with handle_errors(config_data.log_level, config_data.no_color):
-        status = get_change_set_status(client, change_set_id)
+        status = get_change_set_status(client, change_set_id, catalog)
 
     if status in ('preparing', 'applying'):
         color = 'yellow'

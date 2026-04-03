@@ -69,6 +69,7 @@ def get_ami_ids_in_mp_entity(
     client: boto3.client,
     entity_id: str,
     visibility_filter: str = 'Public',
+    catalog: str = 'AWSMarketplace'
 ) -> list[str]:
     """
     Provides the ami-ids in the versions for an offer.
@@ -78,7 +79,7 @@ def get_ami_ids_in_mp_entity(
     is provided as visiblity_filter no filter is applied.
     """
     entity = client.describe_entity(
-        Catalog='AWSMarketplace',
+        Catalog=catalog,
         EntityId=entity_id
     )
 

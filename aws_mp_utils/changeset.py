@@ -30,13 +30,17 @@ import botocore.exceptions as boto_exceptions
 from aws_mp_utils.exceptions import AWSMPUtilsException
 
 
-def get_change_set(client: boto3.client, change_set_id: str) -> dict:
+def get_change_set(
+    client: boto3.client,
+    change_set_id: str,
+    catalog: str = 'AWSMarketplace'
+) -> dict:
     """
     Returns a dictionary containing changeset information
     The changeset is found based on the id.
     """
     response = client.describe_change_set(
-        Catalog='AWSMarketplace',
+        Catalog=catalog,
         ChangeSetId=change_set_id
     )
     return response
@@ -44,12 +48,14 @@ def get_change_set(client: boto3.client, change_set_id: str) -> dict:
 
 def get_change_set_status(
     client: boto3.client,
-    change_set_id: str
+    change_set_id: str,
+    catalog: str = 'AWSMarketplace'
 ) -> str:
     """Gets the status of the changeset"""
     response = get_change_set(
         client,
-        change_set_id
+        change_set_id,
+        catalog
     )
     if response and 'Status' in response:
         # 'Status':'PREPARING'|'APPLYING'|'SUCCEEDED'|'CANCELLED'|'FAILED'
@@ -61,7 +67,8 @@ def start_mp_change_set(
     client: boto3.client,
     change_set: list,
     max_rechecks: int = 10,
-    conflict_wait_period: int = 1800
+    conflict_wait_period: int = 1800,
+    catalog: str = 'AWSMarketplace'
 ) -> dict:
     """
     Additional params included in this function:
@@ -78,7 +85,7 @@ def start_mp_change_set(
         conflicting_error_message = ''
         try:
             response = client.start_change_set(
-                Catalog='AWSMarketplace',
+                Catalog=catalog,
                 ChangeSet=change_set,
             )
             return response

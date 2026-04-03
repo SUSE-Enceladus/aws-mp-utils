@@ -30,7 +30,8 @@ import jmespath
 def get_helm_delivery_option_id(
     client: boto3.client,
     entity_id: str,
-    version_title: str
+    version_title: str,
+    catalog: str = 'AWSMarketplace'
 ) -> str:
     """
     Provides the id of the delivery option to be updated. The id of
@@ -55,7 +56,7 @@ def get_helm_delivery_option_id(
     }
     """
     entity = client.describe_entity(
-        Catalog='AWSMarketplace',
+        Catalog=catalog,
         EntityId=entity_id
     )
     details = entity['DetailsDocument']

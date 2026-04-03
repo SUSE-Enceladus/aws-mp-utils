@@ -90,10 +90,17 @@ def offer():
     type=click.Choice(['Contract', 'Usage', 'Byol', 'Free']),
     help='Indicates which pricing model the existing agreement uses.'
 )
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
 @add_options(shared_options)
 @click.pass_context
 def update_information(
     context,
+    catalog,
     pricing_model,
     acquisition_channel,
     description,
@@ -132,7 +139,8 @@ def update_information(
 
     options = {
         'client': client,
-        'change_set': [change_doc]
+        'change_set': [change_doc],
+        'catalog': catalog
     }
 
     if max_rechecks:

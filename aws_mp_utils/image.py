@@ -110,13 +110,14 @@ def create_add_version_change_doc(
 def get_image_delivery_option_id(
     client: boto3.client,
     entity_id: str,
-    ami_id: str
+    ami_id: str,
+    catalog: str = 'AWSMarketplace'
 ) -> str:
     """
     Return delivery option id for image matching ami id in given offer
     """
     entity = client.describe_entity(
-        Catalog='AWSMarketplace',
+        Catalog=catalog,
         EntityId=entity_id
     )
 
