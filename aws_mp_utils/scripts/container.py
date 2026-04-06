@@ -157,10 +157,17 @@ def container():
          'The expected format of the ID is a UUID.',
     required=True
 )
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
 @add_options(shared_options)
 @click.pass_context
 def add_version(
     context,
+    catalog,
     entity_id,
     version_title,
     release_notes,
@@ -227,7 +234,8 @@ def add_version(
 
     start_cs_options = {
         'client': client,
-        'change_set': [change_doc]
+        'change_set': [change_doc],
+        'catalog': catalog
     }
     if max_rechecks:
         start_cs_options['max_rechecks'] = max_rechecks
@@ -347,10 +355,17 @@ def add_version(
          'The expected format of the ID is a UUID.',
     required=True
 )
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
 @add_options(shared_options)
 @click.pass_context
 def update_version(
     context,
+    catalog,
     entity_id,
     version_title,
     release_notes,
@@ -419,7 +434,8 @@ def update_version(
 
     start_cs_options = {
         'client': client,
-        'change_set': [change_doc]
+        'change_set': [change_doc],
+        'catalog': catalog
     }
     if max_rechecks:
         start_cs_options['max_rechecks'] = max_rechecks
