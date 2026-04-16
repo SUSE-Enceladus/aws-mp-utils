@@ -120,3 +120,115 @@ def get_ami_ids_in_mp_entity(
     if ami_ids is None:
         return []
     return ami_ids
+
+
+def get_available_dimensions(
+    client: boto3.client,
+    offer_id: str,
+    catalog: str = 'AWSMarketplace'
+) -> list[str]:
+    """
+    Lists the available dimensions for the given offer.
+    """
+    entity = client.describe_entity(
+        Catalog=catalog,
+        EntityId=offer_id
+    )
+
+    """
+    Example describe entity output:
+    {
+        "Details": {
+            "Versions": [
+                {
+                    "Sources": [
+                        {
+                            "Image": "ami-123",
+                            "Id": "1234"
+                        },
+                        "Compatibility": {
+                            "AvailableInstanceTypes": [
+                                ...
+                            ]
+                    ],
+                }
+            ],
+            "Dimensions": [
+                {
+                    "Name": "u-3tb1.56xlarge",
+                    "Description": "u-3tb1.56xlarge",
+                    "Key": "u-3tb1.56xlarge",
+                    "Unit": "Hrs",
+                    "Types": [
+                        "Metered"
+                    ]
+                },
+                ...
+            ]
+        }
+    }
+    """
+
+    details = entity['DetailsDocument']
+    query = "Dimensions"
+    dimensions = jmespath.search(query, details)
+
+    if dimensions is None:
+        return []
+    return sorted(dimensions, key=lambda x: x['Name'])
+
+
+def create_restrict_dimensions_offer_change_doc(
+    offer_id: str,
+    dimensions_to_restrict: list[str] = None,
+) -> dict:
+    """
+    Creates an update offer request dictionary.
+    """
+    data = {
+        'ChangeType': "RestrictDimensions",
+        'Entity': {
+            'Type': 'Offer@1.0',
+            'Identifier': offer_id
+        }
+    }
+    details = {}
+
+    if dimensions_to_restrict:
+        details['Restrictions'] = dimensions_to_restrict
+
+    data['Details'] = json.dumps(details)
+    return data
+
+
+def create_add_dimensions_offer_change_doc(
+    offer_id: str,
+    dimensions_to_add: list[str] = None,
+    dimensions_unit: str = 'Hrs',
+    dimensions_type: str = 'Metered'
+) -> dict:
+    """
+    Creates an update offer request dictionary.
+    """
+
+    data = {
+        'ChangeType': "AddDimensions",
+        'Entity': {
+            'Type': 'Offer@1.0',
+            'Identifier': offer_id
+        }
+    }
+    details = []
+
+    if dimensions_to_add:
+        for dimension_name in dimensions_to_add:
+            details.append({
+                'Key': dimension_name,
+                'Name': dimension_name,
+                'Description': dimension_name,
+                'Types': [dimensions_type],
+                'Unit': dimensions_unit
+            })
+
+    data['Details'] = json.dumps(details)
+    return data
