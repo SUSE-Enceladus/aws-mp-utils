@@ -1,5 +1,3 @@
-import json
-
 from unittest.mock import Mock
 
 from aws_mp_utils.offer_dimensions import (
@@ -44,8 +42,6 @@ def test_get_available_dimensions():
     entity['DetailsDocument'] = {}
     dimensions = get_available_dimensions(client, '1234589')
     assert dimensions == []
-
-
 
 
 def test_create_restrict_dimensions_offer_change_doc():

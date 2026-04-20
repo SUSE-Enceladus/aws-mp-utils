@@ -21,7 +21,6 @@
 
 import boto3
 import jmespath
-import json
 
 
 def get_available_dimensions(

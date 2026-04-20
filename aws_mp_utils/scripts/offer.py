@@ -235,14 +235,14 @@ def list_dimensions(
     '--max-rechecks',
     type=click.IntRange(min=0),
     help='The maximum number of checks that are performed when a marketplace '
-        'change cannot be applied because some resource is affected by some '
-        'other ongoing change.'
+         'change cannot be applied because some resource is affected by some '
+         'other ongoing change.'
 )
 @click.option(
     '--conflict-wait-period',
     type=click.IntRange(min=0),
     help='The period (in seconds) that is waited between checks for the '
-        'ongoing mp change to be finished.'
+         'ongoing mp change to be finished.'
 )
 @click.option(
     '--offer-id',
@@ -269,10 +269,8 @@ def list_dimensions(
     '--details-document-file',
     type=click.STRING,
     default=None,
-    help=(
-        'A path to a file containing a JSON formatted string with the '
-        'details document for restricting the offer dimensions.'
-    )
+    help='A path to a file containing a JSON formatted string with the '
+         'details document for restricting the offer dimensions.'
 )
 @add_options(shared_options)
 @click.pass_context
@@ -364,14 +362,14 @@ def restrict_dimensions(
     '--max-rechecks',
     type=click.IntRange(min=0),
     help='The maximum number of checks that are performed when a marketplace '
-        'change cannot be applied because some resource is affected by some '
-        'other ongoing change.'
+         'change cannot be applied because some resource is affected by some '
+         'other ongoing change.'
 )
 @click.option(
     '--conflict-wait-period',
     type=click.IntRange(min=0),
     help='The period (in seconds) that is waited between checks for the '
-        'ongoing mp change to be finished.'
+         'ongoing mp change to be finished.'
 )
 @click.option(
     '--offer-id',
@@ -389,10 +387,8 @@ def restrict_dimensions(
     '--details-document',
     type=click.STRING,
     default=None,
-    help=(
-        'A JSON formatted string containing the details document for'
-        'adding the offer dimensions.'
-    )
+    help='A JSON formatted string containing the details document for'
+         'adding the offer dimensions.'
 )
 @click.option(
     '--details-document-file',

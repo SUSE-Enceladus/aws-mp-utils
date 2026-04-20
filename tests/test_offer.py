@@ -5,12 +5,6 @@ from unittest.mock import Mock
 from aws_mp_utils.offer import (
     create_update_offer_change_doc,
     get_ami_ids_in_mp_entity,
-    # get_available_dimensions,
-    # create_restrict_dimensions_offer_change_doc,
-    # create_add_dimensions_offer_change_doc
-)
-from aws_mp_utils.offer_dimensions import (
-    get_available_dimensions
 )
 
 
