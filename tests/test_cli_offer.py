@@ -61,10 +61,9 @@ def test_list_dimensions(mock_client, mock_get_available_dimensions):
     ]
 
     args = [
-        'offer', 'dimensions',
+        'offer', 'list-dimensions',
         '--config-file', 'tests/data/config.yaml',
         '--offer-id', '123456789',
-        '--list-dimensions',
         '--no-color'
     ]
 
@@ -100,10 +99,10 @@ def test_restrict_dimensions(
     }
 
     args = [
-        'offer', 'dimensions',
+        'offer', 'restrict-dimensions',
         '--config-file', 'tests/data/config.yaml',
         '--offer-id', '123456789',
-        '--restrict-dimensions', 't2.micro,t2.small',
+        '--details-document', '{"Restrictions": ["t2.micro", "t2.small"]}',
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
         '--no-color'
@@ -134,12 +133,10 @@ def test_add_dimensions(
     }
 
     args = [
-        'offer', 'dimensions',
+        'offer', 'add-dimensions',
         '--config-file', 'tests/data/config.yaml',
         '--offer-id', '123456789',
-        '--add-dimensions', 't2.micro,t2.small',
-        '--dimensions-unit', 'MyUnit',
-        '--dimensions-type', 'MyType',
+        '--details-document', '[{"Key": "t2.micro", "Name": "t2.micro"}]',
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
         '--no-color'
@@ -160,23 +157,23 @@ def test_add_dimensions(
 def test_dimensions_usage_error():
     """Confirm offer dimensions usage error"""
     args = [
-        'offer', 'dimensions',
-        '--offer-id', '123456789',
-        '--list-dimensions',
-        '--restrict-dimensions', 't2.micro'
+        'offer', 'restrict-dimensions',
+        '--offer-id', '123456789'
     ]
 
     runner = CliRunner()
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert "Exactly one of --list-dimensions, --restrict-dimensions, " \
-           " --add-dimensions must be specified." in result.output
+    assert (
+        "You must provide one of ['--details-document-file', "
+        "'--details-document'] parameters."
+    ) in result.output
 
     args = [
-        'offer', 'dimensions',
-        '--offer-id', '123456789'
+        'offer', 'restrict-dimensions',
+        '--offer-id', '123456789',
+        '--details-document', 'invalid_json'
     ]
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert "Exactly one of --list-dimensions, --restrict-dimensions, " \
-           " --add-dimensions must be specified." in result.output
+    assert "Invalid JSON provided for --details-document:" in result.output
