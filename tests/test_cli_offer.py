@@ -183,7 +183,10 @@ def test_dimensions_usage_error():
 # -------------------------------------------------
 @patch('aws_mp_utils.scripts.offer.get_available_instance_types')
 @patch('aws_mp_utils.scripts.offer.get_mp_client')
-def test_list_available_instance_types(mock_client, mock_get_available_instance_types):
+def test_list_available_instance_types(
+    mock_client,
+    mock_get_available_instance_types
+):
     """Confirm list available instance types"""
     mock_get_available_instance_types.return_value = [
         "t3.medium",
