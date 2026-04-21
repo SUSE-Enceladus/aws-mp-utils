@@ -39,7 +39,7 @@ with open('requirements-dev.txt') as req_file:
 
 setup(
     name='aws-mp-utils',
-    version='0.2.0',
+    version='0.3.0',
     description='Package that provides utilities for '
                 'handling Marketplace Catalog API in AWS Cloud.',
     long_description=readme,
