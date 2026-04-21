@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 from aws_mp_utils.offer import (
     create_update_offer_change_doc,
-    get_ami_ids_in_mp_entity
+    get_ami_ids_in_mp_entity,
 )
 
 

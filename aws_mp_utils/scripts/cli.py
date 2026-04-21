@@ -172,3 +172,7 @@ def describe_change_set_status(
 main.add_command(image)
 main.add_command(container)
 main.add_command(offer)
+
+
+if __name__ == '__main__':
+    main()
