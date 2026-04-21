@@ -1,3 +1,8 @@
+v0.3.0 (2026-04-21)
+===================
+
+- Adds subcommands to manage dimensions in offers.
+
 v0.2.0 (2026-04-06)
 ===================
 
