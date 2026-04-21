@@ -79,7 +79,7 @@ def get_available_dimensions(
     return sorted(dimensions, key=lambda x: x['Name'])
 
 
-def create_restrict_dimensions_offer_change_doc(
+def create_restrict_dimensions_change_doc(
     offer_id: str,
     details_document: str,
 ) -> dict:
@@ -101,7 +101,7 @@ def create_restrict_dimensions_offer_change_doc(
     return data
 
 
-def create_add_dimensions_offer_change_doc(
+def create_add_dimensions_change_doc(
     offer_id: str,
     details_document: str,
 ) -> dict:

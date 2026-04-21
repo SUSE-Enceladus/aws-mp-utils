@@ -2,8 +2,8 @@ from unittest.mock import Mock
 
 from aws_mp_utils.offer_dimensions import (
     get_available_dimensions,
-    create_restrict_dimensions_offer_change_doc,
-    create_add_dimensions_offer_change_doc
+    create_restrict_dimensions_change_doc,
+    create_add_dimensions_change_doc
 )
 
 
@@ -44,7 +44,7 @@ def test_get_available_dimensions():
     assert dimensions == []
 
 
-def test_create_restrict_dimensions_offer_change_doc():
+def test_create_restrict_dimensions_change_doc():
     details_doc = '{"Restrictions": ["t2.micro", "t2.small"]}'
     expected = {
         'ChangeType': 'RestrictDimensions',
@@ -55,14 +55,14 @@ def test_create_restrict_dimensions_offer_change_doc():
         'DetailsDocument': details_doc
     }
 
-    actual = create_restrict_dimensions_offer_change_doc(
+    actual = create_restrict_dimensions_change_doc(
         offer_id='123456789',
         details_document=details_doc
     )
     assert expected == actual
 
 
-def test_create_add_dimensions_offer_change_doc():
+def test_create_add_dimensions_change_doc():
     details_doc = '[{"Key": "t2.micro", "Name": "t2.micro"}]'
     expected = {
         'ChangeType': 'AddDimensions',
@@ -73,7 +73,7 @@ def test_create_add_dimensions_offer_change_doc():
         'DetailsDocument': details_doc
     }
 
-    actual = create_add_dimensions_offer_change_doc(
+    actual = create_add_dimensions_change_doc(
         offer_id='123456789',
         details_document=details_doc
     )

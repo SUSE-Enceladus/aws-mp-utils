@@ -165,8 +165,9 @@ def test_dimensions_usage_error():
     result = runner.invoke(main, args)
     assert result.exit_code == 2
     assert (
-        "You must provide one of ['--details-document-file', "
-        "'--details-document'] parameters."
+        "One of ['--details-document-file', "
+        "'--details-document'] parameters is required to restrict "
+        "dimensions in an offer."
     ) in result.output
 
     args = [

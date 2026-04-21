@@ -31,8 +31,8 @@ from aws_mp_utils.changeset import start_mp_change_set
 from aws_mp_utils.offer import create_update_offer_change_doc
 from aws_mp_utils.offer_dimensions import (
     get_available_dimensions,
-    create_restrict_dimensions_offer_change_doc,
-    create_add_dimensions_offer_change_doc
+    create_restrict_dimensions_change_doc,
+    create_add_dimensions_change_doc
 )
 from aws_mp_utils.scripts.cli_utils import (
     add_options,
@@ -219,8 +219,6 @@ def list_dimensions(
         else:
             output = ('No dimensions were found')
             echo_style(output, config_data.no_color, fg='red')
-        return
-
     except Exception as e:
         output = str(e)
         no_color = kwargs.get('no_color', False)
@@ -285,7 +283,7 @@ def restrict_dimensions(
     **kwargs
 ):
     """
-    Restricts some available dimensions for the given offer.
+    Removes the provided dimensions from the given offer.
 
     """
 
@@ -311,8 +309,9 @@ def restrict_dimensions(
             )
     else:
         raise click.BadParameter(
-            "You must provide one of ['--details-document-file', "
-            "'--details-document'] parameters."
+            "One of ['--details-document-file', "
+            "'--details-document'] parameters is required to restrict "
+            "dimensions in an offer."
         )
 
     try:
@@ -326,7 +325,7 @@ def restrict_dimensions(
             config_data.region
         )
 
-        change_set_doc = create_restrict_dimensions_offer_change_doc(
+        change_set_doc = create_restrict_dimensions_change_doc(
                 offer_id=offer_id,
                 details_document=details_document
             )
@@ -347,7 +346,6 @@ def restrict_dimensions(
 
         output = f'Change set Id: {response["ChangeSetId"]}'
         echo_style(output, config_data.no_color, fg='green')
-        return
     except Exception as e:
         output = str(e)
         no_color = kwargs.get('no_color', False)
@@ -412,7 +410,7 @@ def add_dimensions(
     **kwargs
 ):
     """
-    Adds some dimensions for the given offer.
+    Adds the provided dimensions to the given offer.
 
     """
 
@@ -438,8 +436,9 @@ def add_dimensions(
             )
     else:
         raise click.BadParameter(
-            "You must provide one of ['--details-document-file', "
-            "'--details-document'] parameters."
+            "One of ['--details-document-file', "
+            "'--details-document'] parameters is required to add "
+            "dimensions in an offer."
         )
 
     try:
@@ -453,7 +452,7 @@ def add_dimensions(
             config_data.region
         )
 
-        change_set_doc = create_add_dimensions_offer_change_doc(
+        change_set_doc = create_add_dimensions_change_doc(
                 offer_id=offer_id,
                 details_document=details_document
             )
@@ -474,7 +473,6 @@ def add_dimensions(
 
         output = f'Change set Id: {response["ChangeSetId"]}'
         echo_style(output, config_data.no_color, fg='green')
-        return
     except Exception as e:
         output = str(e)
         no_color = kwargs.get('no_color', False)
