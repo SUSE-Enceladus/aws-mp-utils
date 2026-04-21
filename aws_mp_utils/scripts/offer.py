@@ -34,6 +34,11 @@ from aws_mp_utils.offer_dimensions import (
     create_restrict_dimensions_change_doc,
     create_add_dimensions_change_doc
 )
+from aws_mp_utils.offer_instance_types import (
+    get_available_instance_types,
+    create_add_instance_types_change_doc,
+    create_restrict_instance_types_change_doc
+)
 from aws_mp_utils.scripts.cli_utils import (
     add_options,
     get_config,
@@ -453,6 +458,322 @@ def add_dimensions(
         )
 
         change_set_doc = create_add_dimensions_change_doc(
+                offer_id=offer_id,
+                details_document=details_document
+            )
+
+        # Change set submission
+        options = {
+            'client': client,
+            'change_set': [change_set_doc],
+            'catalog': catalog
+        }
+
+        if max_rechecks:
+            options['max_rechecks'] = max_rechecks
+        if conflict_wait_period:
+            options['conflict_wait_period'] = conflict_wait_period
+        with handle_errors(config_data.log_level, config_data.no_color):
+            response = start_mp_change_set(**options)
+
+        output = f'Change set Id: {response["ChangeSetId"]}'
+        echo_style(output, config_data.no_color, fg='green')
+    except Exception as e:
+        output = str(e)
+        no_color = kwargs.get('no_color', False)
+        echo_style(output, no_color, fg='red')
+        sys.exit(1)
+
+
+# -----------------------------------------------------------------------------
+# Offer list-available-instance-types command
+@offer.command
+@click.option(
+    '--offer-id',
+    type=click.STRING,
+    required=True,
+    help='The unique identifier the offer in the AWS Marketplace.'
+)
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
+@add_options(shared_options)
+@click.pass_context
+def list_available_instance_types(
+    context,
+    catalog,
+    offer_id,
+    **kwargs
+):
+    """
+    Lists the available instance types for the given offer.
+
+    """
+
+    try:
+        process_shared_options(context.obj, kwargs)
+        config_data = get_config(context.obj)
+        logger = logging.getLogger('aws_mp_utils')
+        logger.setLevel(config_data.log_level)
+
+        client = get_mp_client(
+            config_data.profile,
+            config_data.region
+        )
+
+        # list current dimentions in the provided offer
+        instance_types = get_available_instance_types(
+            client=client,
+            offer_id=offer_id,
+            catalog=catalog
+        )
+        if instance_types:
+            headers = f"{'Instance type':<30}"
+            rows = [headers, '-' * len(headers)]
+            for instance_type in instance_types:
+                rows.append(f"{instance_type:<30}")
+            output = '\n'.join(rows)
+            echo_style(output, config_data.no_color, fg='green')
+        else:
+            output = ('No available instance types were found')
+            echo_style(output, config_data.no_color, fg='red')
+    except Exception as e:
+        output = str(e)
+        no_color = kwargs.get('no_color', False)
+        echo_style(output, no_color, fg='red')
+        sys.exit(1)
+
+
+# -----------------------------------------------------------------------------
+# Offer restrict instance types command
+@offer.command
+@click.option(
+    '--max-rechecks',
+    type=click.IntRange(min=0),
+    help='The maximum number of checks that are performed when a marketplace '
+         'change cannot be applied because some resource is affected by some '
+         'other ongoing change.'
+)
+@click.option(
+    '--conflict-wait-period',
+    type=click.IntRange(min=0),
+    help='The period (in seconds) that is waited between checks for the '
+         'ongoing mp change to be finished.'
+)
+@click.option(
+    '--offer-id',
+    type=click.STRING,
+    required=True,
+    help='The unique identifier the offer in the AWS Marketplace.'
+)
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
+@click.option(
+    '--details-document',
+    type=click.STRING,
+    default=None,
+    help=(
+        'A JSON formatted string containing the details document for'
+        'restricting the offer instance types.'
+    )
+)
+@click.option(
+    '--details-document-file',
+    type=click.STRING,
+    default=None,
+    help='A path to a file containing a JSON formatted string with the '
+         'details document for restricting the offer instance types.'
+)
+@add_options(shared_options)
+@click.pass_context
+def restrict_instance_types(
+    context,
+    details_document_file,
+    details_document,
+    catalog,
+    offer_id,
+    conflict_wait_period,
+    max_rechecks,
+    **kwargs
+):
+    """
+    Restricts the provided instance types from the given offer.
+
+    """
+
+    if details_document is not None:
+        try:
+            json.loads(details_document)
+        except json.JSONDecodeError as e:
+            raise click.BadParameter(
+                f"Invalid JSON provided for --details-document: {e}"
+            )
+    elif details_document_file is not None:
+        try:
+            with open(details_document_file, 'r') as f:
+                details_document = f.read()
+                json.loads(details_document)
+        except json.JSONDecodeError as e:
+            raise click.BadParameter(
+                f"Invalid JSON provided in file --details-document-file: {e}"
+            )
+        except FileNotFoundError as e:
+            raise click.BadParameter(
+                f"File --details-document-file not found: {e}"
+            )
+    else:
+        raise click.BadParameter(
+            "One of ['--details-document-file', "
+            "'--details-document'] parameters is required to restrict "
+            "instance types in an offer."
+        )
+
+    try:
+        process_shared_options(context.obj, kwargs)
+        config_data = get_config(context.obj)
+        logger = logging.getLogger('aws_mp_utils')
+        logger.setLevel(config_data.log_level)
+
+        client = get_mp_client(
+            config_data.profile,
+            config_data.region
+        )
+
+        change_set_doc = create_restrict_instance_types_change_doc(
+                offer_id=offer_id,
+                details_document=details_document
+            )
+
+        # Change set submission
+        options = {
+            'client': client,
+            'change_set': [change_set_doc],
+            'catalog': catalog
+        }
+
+        if max_rechecks:
+            options['max_rechecks'] = max_rechecks
+        if conflict_wait_period:
+            options['conflict_wait_period'] = conflict_wait_period
+        with handle_errors(config_data.log_level, config_data.no_color):
+            response = start_mp_change_set(**options)
+
+        output = f'Change set Id: {response["ChangeSetId"]}'
+        echo_style(output, config_data.no_color, fg='green')
+    except Exception as e:
+        output = str(e)
+        no_color = kwargs.get('no_color', False)
+        echo_style(output, no_color, fg='red')
+        sys.exit(1)
+
+
+# -----------------------------------------------------------------------------
+# Offer add-instance-types command
+@offer.command
+@click.option(
+    '--max-rechecks',
+    type=click.IntRange(min=0),
+    help='The maximum number of checks that are performed when a marketplace '
+         'change cannot be applied because some resource is affected by some '
+         'other ongoing change.'
+)
+@click.option(
+    '--conflict-wait-period',
+    type=click.IntRange(min=0),
+    help='The period (in seconds) that is waited between checks for the '
+         'ongoing mp change to be finished.'
+)
+@click.option(
+    '--offer-id',
+    type=click.STRING,
+    required=True,
+    help='The unique identifier the offer in the AWS Marketplace.'
+)
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
+@click.option(
+    '--details-document',
+    type=click.STRING,
+    default=None,
+    help='A JSON formatted string containing the details document for'
+         'adding the instance types to the offer.'
+)
+@click.option(
+    '--details-document-file',
+    type=click.STRING,
+    default=None,
+    help=(
+        'A path to a file containing a JSON formatted string with the '
+        'details document for adding the offer instance types.'
+    )
+)
+@add_options(shared_options)
+@click.pass_context
+def add_instance_types(
+    context,
+    details_document_file,
+    details_document,
+    catalog,
+    offer_id,
+    conflict_wait_period,
+    max_rechecks,
+    **kwargs
+):
+    """
+    Adds the provided instance types to the given offer.
+
+    """
+
+    if details_document is not None:
+        try:
+            json.loads(details_document)
+        except json.JSONDecodeError as e:
+            raise click.BadParameter(
+                f"Invalid JSON provided for --details-document: {e}"
+            )
+    elif details_document_file is not None:
+        try:
+            with open(details_document_file, 'r') as f:
+                details_document = f.read()
+                json.loads(details_document)
+        except json.JSONDecodeError as e:
+            raise click.BadParameter(
+                f"Invalid JSON provided in file --details-document-file: {e}"
+            )
+        except FileNotFoundError as e:
+            raise click.BadParameter(
+                f"File --details-document-file not found: {e}"
+            )
+    else:
+        raise click.BadParameter(
+            "One of ['--details-document-file', "
+            "'--details-document'] parameters is required to add "
+            "dimensions in an offer."
+        )
+
+    try:
+        process_shared_options(context.obj, kwargs)
+        config_data = get_config(context.obj)
+        logger = logging.getLogger('aws_mp_utils')
+        logger.setLevel(config_data.log_level)
+
+        client = get_mp_client(
+            config_data.profile,
+            config_data.region
+        )
+
+        change_set_doc = create_add_instance_types_change_doc(
                 offer_id=offer_id,
                 details_document=details_document
             )
