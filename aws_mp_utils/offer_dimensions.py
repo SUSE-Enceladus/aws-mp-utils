@@ -21,6 +21,7 @@
 
 import boto3
 import jmespath
+import json
 
 
 def get_available_dimensions(
@@ -96,7 +97,7 @@ def create_restrict_dimensions_change_doc(
             'Type': 'Offer@1.0',
             'Identifier': offer_id
         },
-        'DetailsDocument': details_document
+        'DetailsDocument': json.loads(details_document)
     }
     return data
 
@@ -115,6 +116,6 @@ def create_add_dimensions_change_doc(
             'Type': 'Offer@1.0',
             'Identifier': offer_id
         },
-        'DetailsDocument': details_document
+        'DetailsDocument': json.loads(details_document)
     }
     return data

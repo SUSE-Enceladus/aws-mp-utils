@@ -52,7 +52,7 @@ def test_create_restrict_dimensions_change_doc():
             'Type': 'Offer@1.0',
             'Identifier': '123456789'
         },
-        'DetailsDocument': details_doc
+        'DetailsDocument': {"Restrictions": ["t2.micro", "t2.small"]}
     }
 
     actual = create_restrict_dimensions_change_doc(
@@ -70,7 +70,7 @@ def test_create_add_dimensions_change_doc():
             'Type': 'Offer@1.0',
             'Identifier': '123456789'
         },
-        'DetailsDocument': details_doc
+        'DetailsDocument': [{"Key": "t2.micro", "Name": "t2.micro"}]
     }
 
     actual = create_add_dimensions_change_doc(

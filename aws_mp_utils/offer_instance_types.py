@@ -81,14 +81,14 @@ def get_available_instance_types(
 
 def create_restrict_instance_types_change_doc(
     offer_id: str,
-    details_document: str,
+    instance_types: str,
 ) -> dict:
     """
     Creates an update offer request dictionary to restrict instance types.
 
     :param offer_id: The unique identifier of the offer in the AWS Marketplace.
-    :param details_document: A JSON formatted string containing the details
-        document for restricting the offer available instance types.
+    :param instance_types: A CSV list of instance types for restriction in the
+        offer.
     """
     data = {
         'ChangeType': "RestrictInstanceTypes",
@@ -96,14 +96,16 @@ def create_restrict_instance_types_change_doc(
             'Type': 'Offer@1.0',
             'Identifier': offer_id
         },
-        'DetailsDocument': details_document
+        'DetailsDocument': {
+            'InstanceTypes': instance_types.split(',')
+        }
     }
     return data
 
 
 def create_add_instance_types_change_doc(
     offer_id: str,
-    details_document: str,
+    instance_types: str,
 ) -> dict:
     """
     Creates an update offer request dictionary to add available instance types.
@@ -115,6 +117,8 @@ def create_add_instance_types_change_doc(
             'Type': 'Offer@1.0',
             'Identifier': offer_id
         },
-        'DetailsDocument': details_document
+        'DetailsDocument': {
+            'InstanceTypes': instance_types.split(',')
+        }
     }
     return data

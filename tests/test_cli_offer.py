@@ -235,7 +235,7 @@ def test_restrict_instance_types(
         'offer', 'restrict-instance-types',
         '--config-file', 'tests/data/config.yaml',
         '--offer-id', '123456789',
-        '--details-document', '{"Restrictions": ["t2.micro", "t2.small"]}',
+        '--instance-types', 't2.micro,t2.small',
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
         '--no-color'
@@ -269,7 +269,7 @@ def test_add_instance_types(
         'offer', 'add-instance-types',
         '--config-file', 'tests/data/config.yaml',
         '--offer-id', '123456789',
-        '--details-document', '["t2.micro", "t2.small"]',
+        '--instance-types', 't2.micro,t2.small',
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
         '--no-color'
@@ -297,17 +297,4 @@ def test_instance_types_usage_error():
     runner = CliRunner()
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert (
-        "One of ['--details-document-file', "
-        "'--details-document'] parameters is required to restrict "
-        "instance types in an offer."
-    ) in result.output
-
-    args = [
-        'offer', 'restrict-instance-types',
-        '--offer-id', '123456789',
-        '--details-document', 'invalid_json'
-    ]
-    result = runner.invoke(main, args)
-    assert result.exit_code == 2
-    assert "Invalid JSON provided for --details-document:" in result.output
+    assert "The list of instance types is required." in result.output

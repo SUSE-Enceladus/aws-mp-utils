@@ -576,27 +576,17 @@ def list_available_instance_types(
     help='The catalog related to the request.'
 )
 @click.option(
-    '--details-document',
+    '--instance-types',
     type=click.STRING,
     default=None,
-    help=(
-        'A JSON formatted string containing the details document for'
-        'restricting the offer instance types.'
-    )
-)
-@click.option(
-    '--details-document-file',
-    type=click.STRING,
-    default=None,
-    help='A path to a file containing a JSON formatted string with the '
-         'details document for restricting the offer instance types.'
+    help='A comma separated list of containing the instance types that will '
+         'be restricted to the offer.'
 )
 @add_options(shared_options)
 @click.pass_context
 def restrict_instance_types(
     context,
-    details_document_file,
-    details_document,
+    instance_types,
     catalog,
     offer_id,
     conflict_wait_period,
@@ -608,31 +598,10 @@ def restrict_instance_types(
 
     """
 
-    if details_document is not None:
-        try:
-            json.loads(details_document)
-        except json.JSONDecodeError as e:
-            raise click.BadParameter(
-                f"Invalid JSON provided for --details-document: {e}"
-            )
-    elif details_document_file is not None:
-        try:
-            with open(details_document_file, 'r') as f:
-                details_document = f.read()
-                json.loads(details_document)
-        except json.JSONDecodeError as e:
-            raise click.BadParameter(
-                f"Invalid JSON provided in file --details-document-file: {e}"
-            )
-        except FileNotFoundError as e:
-            raise click.BadParameter(
-                f"File --details-document-file not found: {e}"
-            )
-    else:
+    if instance_types is None:
         raise click.BadParameter(
-            "One of ['--details-document-file', "
-            "'--details-document'] parameters is required to restrict "
-            "instance types in an offer."
+            "The list of instance types is required. The --instance-types "
+            "parameter should be provided'"
         )
 
     try:
@@ -648,7 +617,7 @@ def restrict_instance_types(
 
         change_set_doc = create_restrict_instance_types_change_doc(
                 offer_id=offer_id,
-                details_document=details_document
+                instance_types=instance_types
             )
 
         # Change set submission
@@ -703,27 +672,17 @@ def restrict_instance_types(
     help='The catalog related to the request.'
 )
 @click.option(
-    '--details-document',
+    '--instance-types',
     type=click.STRING,
     default=None,
-    help='A JSON formatted string containing the details document for'
-         'adding the instance types to the offer.'
-)
-@click.option(
-    '--details-document-file',
-    type=click.STRING,
-    default=None,
-    help=(
-        'A path to a file containing a JSON formatted string with the '
-        'details document for adding the offer instance types.'
-    )
+    help='A comma separated list of containing the instance types that will '
+         'be added to the offer.'
 )
 @add_options(shared_options)
 @click.pass_context
 def add_instance_types(
     context,
-    details_document_file,
-    details_document,
+    instance_types,
     catalog,
     offer_id,
     conflict_wait_period,
@@ -735,31 +694,10 @@ def add_instance_types(
 
     """
 
-    if details_document is not None:
-        try:
-            json.loads(details_document)
-        except json.JSONDecodeError as e:
-            raise click.BadParameter(
-                f"Invalid JSON provided for --details-document: {e}"
-            )
-    elif details_document_file is not None:
-        try:
-            with open(details_document_file, 'r') as f:
-                details_document = f.read()
-                json.loads(details_document)
-        except json.JSONDecodeError as e:
-            raise click.BadParameter(
-                f"Invalid JSON provided in file --details-document-file: {e}"
-            )
-        except FileNotFoundError as e:
-            raise click.BadParameter(
-                f"File --details-document-file not found: {e}"
-            )
-    else:
+    if instance_types is None:
         raise click.BadParameter(
-            "One of ['--details-document-file', "
-            "'--details-document'] parameters is required to add "
-            "dimensions in an offer."
+            "The list of instance types is required. The --instance-types "
+            "parameter should be provided'"
         )
 
     try:
@@ -775,7 +713,7 @@ def add_instance_types(
 
         change_set_doc = create_add_instance_types_change_doc(
                 offer_id=offer_id,
-                details_document=details_document
+                instance_types=instance_types
             )
 
         # Change set submission

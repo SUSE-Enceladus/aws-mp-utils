@@ -44,36 +44,40 @@ def test_get_available_instance_types():
 
 
 def test_create_restrict_instance_types_change_doc():
-    details_doc = '{"Restrictions": ["t2.micro", "t2.small"]}'
+    instance_types = 't2.micro,t2.small'
     expected = {
         'ChangeType': 'RestrictInstanceTypes',
         'Entity': {
             'Type': 'Offer@1.0',
             'Identifier': '123456789'
         },
-        'DetailsDocument': details_doc
+        'DetailsDocument': {
+            'InstanceTypes': ['t2.micro', 't2.small']
+        }
     }
 
     actual = create_restrict_instance_types_change_doc(
         offer_id='123456789',
-        details_document=details_doc
+        instance_types=instance_types
     )
     assert expected == actual
 
 
 def test_create_add_instance_types_change_doc():
-    details_doc = '["t2.micro", "t2.small"]'
+    instance_types = 't2.micro,t2.small'
     expected = {
         'ChangeType': 'AddInstanceTypes',
         'Entity': {
             'Type': 'Offer@1.0',
             'Identifier': '123456789'
         },
-        'DetailsDocument': details_doc
+        'DetailsDocument': {
+            'InstanceTypes': ['t2.micro', 't2.small']
+        }
     }
 
     actual = create_add_instance_types_change_doc(
         offer_id='123456789',
-        details_document=details_doc
+        instance_types=instance_types
     )
     assert expected == actual
