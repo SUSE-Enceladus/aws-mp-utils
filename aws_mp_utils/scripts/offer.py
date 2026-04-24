@@ -580,7 +580,7 @@ def list_available_instance_types(
     type=click.STRING,
     required=True,
     help='A comma separated list of containing the instance types that will '
-         'be restricted to the offer.'
+         'be restricted in the offer.'
 )
 @add_options(shared_options)
 @click.pass_context
@@ -597,6 +597,12 @@ def restrict_instance_types(
     Restricts the provided instance types from the given offer.
 
     """
+    if '[' in instance_types or ']' in instance_types:
+        raise click.BadParameter(
+            'The "--instance-types" expected format is a string containing the'
+            'instance types separated by commas.'
+        )
+    instance_types = instance_types.split(',')
 
     try:
         process_shared_options(context.obj, kwargs)
@@ -687,6 +693,13 @@ def add_instance_types(
     Adds the provided instance types to the given offer.
 
     """
+
+    if '[' in instance_types or ']' in instance_types:
+        raise click.BadParameter(
+            'The "--instance-types" expected format is a string containing the'
+            'instance types separated by commas.'
+        )
+    instance_types = instance_types.split(',')
 
     try:
         process_shared_options(context.obj, kwargs)

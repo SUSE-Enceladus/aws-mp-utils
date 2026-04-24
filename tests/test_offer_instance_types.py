@@ -44,7 +44,7 @@ def test_get_available_instance_types():
 
 
 def test_create_restrict_instance_types_change_doc():
-    instance_types = 't2.micro,t2.small'
+    instance_types = ['t2.micro', 't2.small']
     expected = {
         'ChangeType': 'RestrictInstanceTypes',
         'Entity': {
@@ -64,7 +64,7 @@ def test_create_restrict_instance_types_change_doc():
 
 
 def test_create_add_instance_types_change_doc():
-    instance_types = 't2.micro,t2.small'
+    instance_types = ['t2.micro', 't2.small']
     expected = {
         'ChangeType': 'AddInstanceTypes',
         'Entity': {
