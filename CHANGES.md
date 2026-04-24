@@ -1,3 +1,8 @@
+v0.4.0 (2026-04-24)
+===================
+
+- Adds subcommands to manage instance_types in offers.
+
 v0.3.0 (2026-04-21)
 ===================
 
