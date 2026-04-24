@@ -297,4 +297,4 @@ def test_instance_types_usage_error():
     runner = CliRunner()
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert "The list of instance types is required." in result.output
+    assert " Missing option '--instance-types'" in result.output

@@ -578,7 +578,7 @@ def list_available_instance_types(
 @click.option(
     '--instance-types',
     type=click.STRING,
-    default=None,
+    required=True,
     help='A comma separated list of containing the instance types that will '
          'be restricted to the offer.'
 )
@@ -597,12 +597,6 @@ def restrict_instance_types(
     Restricts the provided instance types from the given offer.
 
     """
-
-    if instance_types is None:
-        raise click.BadParameter(
-            "The list of instance types is required. The --instance-types "
-            "parameter should be provided'"
-        )
 
     try:
         process_shared_options(context.obj, kwargs)
@@ -674,7 +668,7 @@ def restrict_instance_types(
 @click.option(
     '--instance-types',
     type=click.STRING,
-    default=None,
+    required=True,
     help='A comma separated list of containing the instance types that will '
          'be added to the offer.'
 )
@@ -693,12 +687,6 @@ def add_instance_types(
     Adds the provided instance types to the given offer.
 
     """
-
-    if instance_types is None:
-        raise click.BadParameter(
-            "The list of instance types is required. The --instance-types "
-            "parameter should be provided'"
-        )
 
     try:
         process_shared_options(context.obj, kwargs)
