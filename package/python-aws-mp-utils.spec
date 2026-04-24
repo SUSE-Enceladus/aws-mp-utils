@@ -24,7 +24,7 @@
 %global _sitelibdir %{%{pythons}_sitelib}
 
 Name:           python-aws-mp-utils
-Version:        0.3.0
+Version:        0.4.0
 Release:        0
 Summary:        Functions and CLI for AWS Marketplace-Catalog APIs
 License:        GPL-3.0-or-later
