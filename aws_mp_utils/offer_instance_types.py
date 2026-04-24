@@ -21,16 +21,15 @@
 
 import boto3
 import jmespath
-import json
 
 
-def get_available_dimensions(
+def get_available_instance_types(
     client: boto3.client,
     offer_id: str,
     catalog: str = 'AWSMarketplace'
 ) -> list[str]:
     """
-    Lists the available dimensions for the given offer.
+    Lists the available instance types for the given offer.
     """
     entity = client.describe_entity(
         Catalog=catalog,
@@ -72,50 +71,58 @@ def get_available_dimensions(
     """
 
     details = entity['DetailsDocument']
-    query = "Dimensions"
-    dimensions = jmespath.search(query, details)
+    query = "Versions[].Sources[].Compatibility.AvailableInstanceTypes[]"
+    instance_types = jmespath.search(query, details)
 
-    if dimensions is None:
+    if instance_types is None:
         return []
-    return sorted(dimensions, key=lambda x: x['Name'])
+    return sorted(list(set(instance_types)))
 
 
-def create_restrict_dimensions_change_doc(
+def create_restrict_instance_types_change_doc(
     offer_id: str,
-    details_document: str,
+    instance_types: [str],
 ) -> dict:
     """
-    Creates an update offer request dictionary to restrict dimensions.
+    Creates an update offer request dictionary to restrict instance types.
 
     :param offer_id: The unique identifier of the offer in the AWS Marketplace.
-    :param details_document: A JSON formatted string containing the details
-        document for restricting the offer dimensions.
+    :param instance_types: A list of instance types for restriction in the
+        offer.
     """
     data = {
-        'ChangeType': "RestrictDimensions",
+        'ChangeType': "RestrictInstanceTypes",
         'Entity': {
             'Type': 'Offer@1.0',
             'Identifier': offer_id
         },
-        'DetailsDocument': json.loads(details_document)
+        'DetailsDocument': {
+            'InstanceTypes': instance_types
+        }
     }
     return data
 
 
-def create_add_dimensions_change_doc(
+def create_add_instance_types_change_doc(
     offer_id: str,
-    details_document: str,
+    instance_types: [str],
 ) -> dict:
     """
-    Creates an update offer request dictionary to add dimensions.
+    Creates an update offer request dictionary to add available instance types.
+
+    :param offer_id: The unique identifier of the offer in the AWS Marketplace.
+    :param instance_types: A list of instance types for addition in the
+        offer.
     """
 
     data = {
-        'ChangeType': "AddDimensions",
+        'ChangeType': "AddInstanceTypes",
         'Entity': {
             'Type': 'Offer@1.0',
             'Identifier': offer_id
         },
-        'DetailsDocument': json.loads(details_document)
+        'DetailsDocument': {
+            'InstanceTypes': instance_types
+        }
     }
     return data

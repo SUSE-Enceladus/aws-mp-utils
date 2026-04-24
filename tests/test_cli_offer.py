@@ -119,6 +119,12 @@ def test_restrict_dimensions(
     assert result.exit_code == 1
     assert 'Invalid change set!' in result.output
 
+    # Simulate failure in boto3 (outer exception block)
+    mock_client.side_effect = Exception('403: Auth failure!')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert '403: Auth failure!' in result.output
+
 
 # -------------------------------------------------
 @patch('aws_mp_utils.scripts.offer.start_mp_change_set')
@@ -153,8 +159,78 @@ def test_add_dimensions(
     assert result.exit_code == 1
     assert 'Invalid change set!' in result.output
 
+    # Simulate failure in boto3 (outer exception block)
+    mock_client.side_effect = Exception('403: Auth failure!')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert '403: Auth failure!' in result.output
 
-def test_dimensions_usage_error():
+
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.offer.start_mp_change_set')
+@patch('aws_mp_utils.scripts.offer.get_mp_client')
+def test_restrict_dimensions_with_file(
+    mock_client,
+    mock_start_change_set,
+    tmp_path
+):
+    """Confirm restrict offer dimensions with a file"""
+    mock_start_change_set.return_value = {
+        'ChangeSetId': '123456789'
+    }
+
+    doc_file = tmp_path / "details.json"
+    doc_file.write_text('{"Restrictions": ["t2.micro", "t2.small"]}')
+
+    args = [
+        'offer', 'restrict-dimensions',
+        '--config-file', 'tests/data/config.yaml',
+        '--offer-id', '123456789',
+        '--details-document-file', str(doc_file),
+        '--max-rechecks', '10',
+        '--conflict-wait-period', '300',
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.offer.start_mp_change_set')
+@patch('aws_mp_utils.scripts.offer.get_mp_client')
+def test_add_dimensions_with_file(
+    mock_client,
+    mock_start_change_set,
+    tmp_path
+):
+    """Confirm add offer dimensions with a file"""
+    mock_start_change_set.return_value = {
+        'ChangeSetId': '123456789'
+    }
+
+    doc_file = tmp_path / "details.json"
+    doc_file.write_text('[{"Key": "t2.micro", "Name": "t2.micro"}]')
+
+    args = [
+        'offer', 'add-dimensions',
+        '--config-file', 'tests/data/config.yaml',
+        '--offer-id', '123456789',
+        '--details-document-file', str(doc_file),
+        '--max-rechecks', '10',
+        '--conflict-wait-period', '300',
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+
+def test_dimensions_usage_error(tmp_path):
     """Confirm offer dimensions usage error"""
     args = [
         'offer', 'restrict-dimensions',
@@ -178,3 +254,220 @@ def test_dimensions_usage_error():
     result = runner.invoke(main, args)
     assert result.exit_code == 2
     assert "Invalid JSON provided for --details-document:" in result.output
+
+    args = [
+        'offer', 'restrict-dimensions',
+        '--offer-id', '123456789',
+        '--details-document-file', 'non_existing_file.json'
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert "File --details-document-file not found:" in result.output
+
+    invalid_file = tmp_path / 'invalid.json'
+    invalid_file.write_text('invalid_json')
+    args = [
+        'offer', 'restrict-dimensions',
+        '--offer-id', '123456789',
+        '--details-document-file', str(invalid_file)
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert "Invalid JSON provided in file --details-document-file:" \
+        in result.output
+
+    args = [
+        'offer', 'add-dimensions',
+        '--offer-id', '123456789'
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert (
+        "One of ['--details-document-file', "
+        "'--details-document'] parameters is required to add "
+        "dimensions in an offer."
+    ) in result.output
+
+    args = [
+        'offer', 'add-dimensions',
+        '--offer-id', '123456789',
+        '--details-document', 'invalid_json'
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert "Invalid JSON provided for --details-document:" in result.output
+
+    args = [
+        'offer', 'add-dimensions',
+        '--offer-id', '123456789',
+        '--details-document-file', 'non_existing_file.json'
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert "File --details-document-file not found:" in result.output
+
+    args = [
+        'offer', 'add-dimensions',
+        '--offer-id', '123456789',
+        '--details-document-file', str(invalid_file)
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert "Invalid JSON provided in file --details-document-file:" \
+        in result.output
+
+
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.offer.get_available_instance_types')
+@patch('aws_mp_utils.scripts.offer.get_mp_client')
+def test_list_available_instance_types(
+    mock_client,
+    mock_get_available_instance_types
+):
+    """Confirm list available instance types"""
+    mock_get_available_instance_types.return_value = [
+        "t3.medium",
+        "u-3tb1.56xlarge"
+    ]
+
+    args = [
+        'offer', 'list-available-instance-types',
+        '--config-file', 'tests/data/config.yaml',
+        '--offer-id', '123456789',
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 't3.medium' in result.output
+    assert 'u-3tb1.56xlarge' in result.output
+
+    # No available instance types found
+    mock_get_available_instance_types.return_value = []
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'No available instance types were found' in result.output
+
+    # Failure
+    mock_get_available_instance_types.side_effect = Exception('Some error')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert 'Some error' in result.output
+
+
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.offer.start_mp_change_set')
+@patch('aws_mp_utils.scripts.offer.get_mp_client')
+def test_restrict_instance_types(
+    mock_client,
+    mock_start_change_set
+):
+    """Confirm restrict offer instance types"""
+    mock_start_change_set.return_value = {
+        'ChangeSetId': '123456789'
+    }
+
+    args = [
+        'offer', 'restrict-instance-types',
+        '--config-file', 'tests/data/config.yaml',
+        '--offer-id', '123456789',
+        '--instance-types', 't2.micro,t2.small',
+        '--max-rechecks', '10',
+        '--conflict-wait-period', '300',
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+    # Failure to start changeset
+    mock_start_change_set.side_effect = Exception('Invalid change set!')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert 'Invalid change set!' in result.output
+
+    # Simulate failure in boto3 (outer exception block)
+    mock_client.side_effect = Exception('403: Auth failure!')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert '403: Auth failure!' in result.output
+
+
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.offer.start_mp_change_set')
+@patch('aws_mp_utils.scripts.offer.get_mp_client')
+def test_add_instance_types(
+    mock_client,
+    mock_start_change_set
+):
+    """Confirm add offer instance types"""
+    mock_start_change_set.return_value = {
+        'ChangeSetId': '123456789'
+    }
+
+    args = [
+        'offer', 'add-instance-types',
+        '--config-file', 'tests/data/config.yaml',
+        '--offer-id', '123456789',
+        '--instance-types', 't2.micro,t2.small',
+        '--max-rechecks', '10',
+        '--conflict-wait-period', '300',
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+    # Failure to start changeset
+    mock_start_change_set.side_effect = Exception('Invalid change set!')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert 'Invalid change set!' in result.output
+
+    # Simulate failure in boto3 (outer exception block)
+    mock_client.side_effect = Exception('403: Auth failure!')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert '403: Auth failure!' in result.output
+
+
+def test_instance_types_usage_error():
+    """Confirm offer instance types usage error"""
+    args = [
+        'offer', 'restrict-instance-types',
+        '--offer-id', '123456789'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert " Missing option '--instance-types'" in result.output
+
+    args = [
+        'offer', 'add-instance-types',
+        '--offer-id', '123456789', '--instance-types',
+        '["t2.micro", "t2.small"]'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert 'The "--instance-types" expected format is a string containing' \
+        in result.output
+
+    args = [
+        'offer', 'restrict-instance-types',
+        '--offer-id', '123456789', '--instance-types',
+        '["t2.micro", "t2.small"]'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert 'The "--instance-types" expected format is a string containing' \
+        in result.output
