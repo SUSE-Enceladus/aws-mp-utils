@@ -564,10 +564,10 @@ def list_available_instance_types(
          'ongoing mp change to be finished.'
 )
 @click.option(
-    '--offer-id',
+    '--product-id',
     type=click.STRING,
     required=True,
-    help='The unique identifier the offer in the AWS Marketplace.'
+    help='The unique identifier the product in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -588,7 +588,7 @@ def restrict_instance_types(
     context,
     instance_types,
     catalog,
-    offer_id,
+    product_id,
     conflict_wait_period,
     max_rechecks,
     **kwargs
@@ -616,9 +616,9 @@ def restrict_instance_types(
         )
 
         change_set_doc = create_restrict_instance_types_change_doc(
-                offer_id=offer_id,
-                instance_types=instance_types
-            )
+            product_id=product_id,
+            instance_types=instance_types
+        )
 
         # Change set submission
         options = {
@@ -660,10 +660,10 @@ def restrict_instance_types(
          'ongoing mp change to be finished.'
 )
 @click.option(
-    '--offer-id',
+    '--product-id',
     type=click.STRING,
     required=True,
-    help='The unique identifier the offer in the AWS Marketplace.'
+    help='The unique identifier the product in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -684,7 +684,7 @@ def add_instance_types(
     context,
     instance_types,
     catalog,
-    offer_id,
+    product_id,
     conflict_wait_period,
     max_rechecks,
     **kwargs
@@ -713,9 +713,9 @@ def add_instance_types(
         )
 
         change_set_doc = create_add_instance_types_change_doc(
-                offer_id=offer_id,
-                instance_types=instance_types
-            )
+            product_id=product_id,
+            instance_types=instance_types
+        )
 
         # Change set submission
         options = {

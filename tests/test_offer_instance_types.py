@@ -48,7 +48,7 @@ def test_create_restrict_instance_types_change_doc():
     expected = {
         'ChangeType': 'RestrictInstanceTypes',
         'Entity': {
-            'Type': 'Offer@1.0',
+            'Type': 'AmiProduct@1.0',
             'Identifier': '123456789'
         },
         'DetailsDocument': {
@@ -57,7 +57,7 @@ def test_create_restrict_instance_types_change_doc():
     }
 
     actual = create_restrict_instance_types_change_doc(
-        offer_id='123456789',
+        product_id='123456789',
         instance_types=instance_types
     )
     assert expected == actual
@@ -68,7 +68,7 @@ def test_create_add_instance_types_change_doc():
     expected = {
         'ChangeType': 'AddInstanceTypes',
         'Entity': {
-            'Type': 'Offer@1.0',
+            'Type': 'AmiProduct@1.0',
             'Identifier': '123456789'
         },
         'DetailsDocument': {
@@ -77,7 +77,7 @@ def test_create_add_instance_types_change_doc():
     }
 
     actual = create_add_instance_types_change_doc(
-        offer_id='123456789',
+        product_id='123456789',
         instance_types=instance_types
     )
     assert expected == actual

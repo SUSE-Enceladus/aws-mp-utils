@@ -371,7 +371,7 @@ def test_restrict_instance_types(
     args = [
         'offer', 'restrict-instance-types',
         '--config-file', 'tests/data/config.yaml',
-        '--offer-id', '123456789',
+        '--product-id', '123456789',
         '--instance-types', 't2.micro,t2.small',
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
@@ -411,7 +411,7 @@ def test_add_instance_types(
     args = [
         'offer', 'add-instance-types',
         '--config-file', 'tests/data/config.yaml',
-        '--offer-id', '123456789',
+        '--product-id', '123456789',
         '--instance-types', 't2.micro,t2.small',
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
@@ -440,7 +440,7 @@ def test_instance_types_usage_error():
     """Confirm offer instance types usage error"""
     args = [
         'offer', 'restrict-instance-types',
-        '--offer-id', '123456789'
+        '--product-id', '123456789'
     ]
 
     runner = CliRunner()
@@ -450,7 +450,7 @@ def test_instance_types_usage_error():
 
     args = [
         'offer', 'add-instance-types',
-        '--offer-id', '123456789', '--instance-types',
+        '--product-id', '123456789', '--instance-types',
         '["t2.micro", "t2.small"]'
     ]
 
@@ -462,7 +462,7 @@ def test_instance_types_usage_error():
 
     args = [
         'offer', 'restrict-instance-types',
-        '--offer-id', '123456789', '--instance-types',
+        '--product-id', '123456789', '--instance-types',
         '["t2.micro", "t2.small"]'
     ]
 
