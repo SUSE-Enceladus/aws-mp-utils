@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from aws_mp_utils.offer_instance_types import (
+from aws_mp_utils.ami_product_instance_types import (
     get_available_instance_types,
     create_restrict_instance_types_change_doc,
     create_add_instance_types_change_doc

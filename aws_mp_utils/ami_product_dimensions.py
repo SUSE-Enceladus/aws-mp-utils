@@ -21,19 +21,20 @@
 
 import boto3
 import jmespath
+import json
 
 
-def get_available_instance_types(
+def get_available_dimensions(
     client: boto3.client,
-    offer_id: str,
+    product_id: str,
     catalog: str = 'AWSMarketplace'
 ) -> list[str]:
     """
-    Lists the available instance types for the given offer.
+    Lists the available dimensions for the given product.
     """
     entity = client.describe_entity(
         Catalog=catalog,
-        EntityId=offer_id
+        EntityId=product_id
     )
 
     """
@@ -71,61 +72,51 @@ def get_available_instance_types(
     """
 
     details = entity['DetailsDocument']
-    query = "Versions[].Sources[].Compatibility.AvailableInstanceTypes[]"
-    instance_types = jmespath.search(query, details)
+    query = "Dimensions"
+    dimensions = jmespath.search(query, details)
 
-    if instance_types is None:
+    if dimensions is None:
         return []
-    return sorted(list(set(instance_types)))
+    return sorted(dimensions, key=lambda x: x['Name'])
 
 
-def create_restrict_instance_types_change_doc(
+def create_restrict_dimensions_change_doc(
     product_id: str,
-    instance_types: [str],
+    details_document: str,
 ) -> dict:
     """
-    Creates an update product request dictionary to restrict instance types.
+    Creates an update ami product request dictionary to restrict dimensions.
 
     :param product_id: The unique identifier of the product in the AWS
     Marketplace.
-    :param instance_types: A list of instance types for restriction in the
-        offer.
+    :param details_document: A JSON formatted string containing the details
+        document for restricting the product dimensions.
     """
     data = {
-        'ChangeType': "RestrictInstanceTypes",
+        'ChangeType': "RestrictDimensions",
         'Entity': {
             'Type': 'AmiProduct@1.0',
             'Identifier': product_id
         },
-        'DetailsDocument': {
-            'InstanceTypes': instance_types
-        }
+        'DetailsDocument': json.loads(details_document)
     }
     return data
 
 
-def create_add_instance_types_change_doc(
+def create_add_dimensions_change_doc(
     product_id: str,
-    instance_types: [str],
+    details_document: str,
 ) -> dict:
     """
-    Creates an addInstanceTypes update product request dictionary to add
-    available instance types.
-
-    :param product_id: The unique identifier of the product in the AWS
-    Marketplace.
-    :param instance_types: A list of instance types for addition in the
-        product.
+    Creates an update  ami product request dictionary to add dimensions.
     """
 
     data = {
-        'ChangeType': "AddInstanceTypes",
+        'ChangeType': "AddDimensions",
         'Entity': {
             'Type': 'AmiProduct@1.0',
             'Identifier': product_id
         },
-        'DetailsDocument': {
-            'InstanceTypes': instance_types
-        }
+        'DetailsDocument': json.loads(details_document)
     }
     return data
