@@ -135,7 +135,7 @@ def list_dimensions(
 )
 @click.option(
     '--conflict-wait-period',
-    type=click.IntRange(min=7200),
+    type=click.IntRange(min=0),
     help='The period (in seconds) that is waited between checks for the '
          'ongoing mp change to be finished.'
 )
