@@ -24,6 +24,7 @@
 import logging
 import sys
 import json
+import os
 
 import click
 
@@ -65,7 +66,7 @@ def ami_product():
     '--product-id',
     type=click.STRING,
     required=True,
-    help='The unique identifier the product in the AWS Marketplace.'
+    help='The unique identifier for the product in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -83,7 +84,6 @@ def list_dimensions(
 ):
     """
     Lists the available dimensions for the given product.
-
     """
 
     try:
@@ -135,7 +135,7 @@ def list_dimensions(
 )
 @click.option(
     '--conflict-wait-period',
-    type=click.IntRange(min=0),
+    type=click.IntRange(min=7200),
     help='The period (in seconds) that is waited between checks for the '
          'ongoing mp change to be finished.'
 )
@@ -143,7 +143,7 @@ def list_dimensions(
     '--product-id',
     type=click.STRING,
     required=True,
-    help='The unique identifier the product_id in the AWS Marketplace.'
+    help='The unique identifier for the product_id in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -154,24 +154,16 @@ def list_dimensions(
 @click.option(
     '--details-document',
     type=click.STRING,
-    default=None,
+    required=True,
     help=(
-        'A JSON formatted string containing the details document for'
-        'restricting the product dimensions.'
+        'A JSON formatted string or a path to a file containing the '
+        'details document for restricting the product dimensions.'
     )
-)
-@click.option(
-    '--details-document-file',
-    type=click.STRING,
-    default=None,
-    help='A path to a file containing a JSON formatted string with the '
-         'details document for restricting the product dimensions.'
 )
 @add_options(shared_options)
 @click.pass_context
 def restrict_dimensions(
     context,
-    details_document_file,
     details_document,
     catalog,
     product_id,
@@ -181,34 +173,20 @@ def restrict_dimensions(
 ):
     """
     Removes the provided dimensions from the given product.
-
     """
 
-    if details_document is not None:
-        try:
-            json.loads(details_document)
-        except json.JSONDecodeError as e:
-            raise click.BadParameter(
-                f"Invalid JSON provided for --details-document: {e}"
-            )
-    elif details_document_file is not None:
-        try:
-            with open(details_document_file, 'r') as f:
+    try:
+        if os.path.isfile(details_document):
+            with open(details_document, 'r') as f:
                 details_document = f.read()
-                json.loads(details_document)
-        except json.JSONDecodeError as e:
-            raise click.BadParameter(
-                f"Invalid JSON provided in file --details-document-file: {e}"
-            )
-        except FileNotFoundError as e:
-            raise click.BadParameter(
-                f"File --details-document-file not found: {e}"
-            )
-    else:
+    except OSError:
+        pass
+
+    try:
+        json.loads(details_document)
+    except json.JSONDecodeError as e:
         raise click.BadParameter(
-            "One of ['--details-document-file', "
-            "'--details-document'] parameters is required to restrict "
-            "dimensions in a product."
+            f"Invalid JSON provided for --details-document: {e}"
         )
 
     try:
@@ -270,7 +248,7 @@ def restrict_dimensions(
     '--product-id',
     type=click.STRING,
     required=True,
-    help='The unique identifier the product in the AWS Marketplace.'
+    help='The unique identifier for the product in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -281,16 +259,9 @@ def restrict_dimensions(
 @click.option(
     '--details-document',
     type=click.STRING,
-    default=None,
-    help='A JSON formatted string containing the details document for'
-         'adding the product dimensions.'
-)
-@click.option(
-    '--details-document-file',
-    type=click.STRING,
-    default=None,
+    required=True,
     help=(
-        'A path to a file containing a JSON formatted string with the '
+        'A JSON formatted string or a path to a file containing the '
         'details document for adding the product dimensions.'
     )
 )
@@ -298,7 +269,6 @@ def restrict_dimensions(
 @click.pass_context
 def add_dimensions(
     context,
-    details_document_file,
     details_document,
     catalog,
     product_id,
@@ -308,34 +278,20 @@ def add_dimensions(
 ):
     """
     Adds the provided dimensions to the given product.
-
     """
 
-    if details_document is not None:
-        try:
-            json.loads(details_document)
-        except json.JSONDecodeError as e:
-            raise click.BadParameter(
-                f"Invalid JSON provided for --details-document: {e}"
-            )
-    elif details_document_file is not None:
-        try:
-            with open(details_document_file, 'r') as f:
+    try:
+        if os.path.isfile(details_document):
+            with open(details_document, 'r') as f:
                 details_document = f.read()
-                json.loads(details_document)
-        except json.JSONDecodeError as e:
-            raise click.BadParameter(
-                f"Invalid JSON provided in file --details-document-file: {e}"
-            )
-        except FileNotFoundError as e:
-            raise click.BadParameter(
-                f"File --details-document-file not found: {e}"
-            )
-    else:
+    except OSError:
+        pass
+
+    try:
+        json.loads(details_document)
+    except json.JSONDecodeError as e:
         raise click.BadParameter(
-            "One of ['--details-document-file', "
-            "'--details-document'] parameters is required to add "
-            "dimensions to a product."
+            f"Invalid JSON provided for --details-document: {e}"
         )
 
     try:
@@ -384,7 +340,7 @@ def add_dimensions(
     '--product-id',
     type=click.STRING,
     required=True,
-    help='The unique identifier the product in the AWS Marketplace.'
+    help='The unique identifier for the product in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -458,7 +414,7 @@ def list_available_instance_types(
     '--product-id',
     type=click.STRING,
     required=True,
-    help='The unique identifier the product in the AWS Marketplace.'
+    help='The unique identifier for the product in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -486,8 +442,8 @@ def restrict_instance_types(
 ):
     """
     Restricts the provided instance types from the given product.
-
     """
+
     if '[' in instance_types or ']' in instance_types:
         raise click.BadParameter(
             'The "--instance-types" expected format is a string containing the'
@@ -554,7 +510,7 @@ def restrict_instance_types(
     '--product-id',
     type=click.STRING,
     required=True,
-    help='The unique identifier the product in the AWS Marketplace.'
+    help='The unique identifier for the product in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -582,7 +538,6 @@ def add_instance_types(
 ):
     """
     Adds the provided instance types to the given product.
-
     """
 
     if '[' in instance_types or ']' in instance_types:

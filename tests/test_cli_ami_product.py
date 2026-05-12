@@ -149,7 +149,7 @@ def test_restrict_dimensions_with_file(
         'ami-product', 'restrict-dimensions',
         '--config-file', 'tests/data/config.yaml',
         '--product-id', '123456789',
-        '--details-document-file', str(doc_file),
+        '--details-document', str(doc_file),
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
         '--no-color'
@@ -181,7 +181,7 @@ def test_add_dimensions_with_file(
         'ami-product', 'add-dimensions',
         '--config-file', 'tests/data/config.yaml',
         '--product-id', '123456789',
-        '--details-document-file', str(doc_file),
+        '--details-document', str(doc_file),
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
         '--no-color'
@@ -203,11 +203,7 @@ def test_dimensions_usage_error(tmp_path):
     runner = CliRunner()
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert (
-        "One of ['--details-document-file', "
-        "'--details-document'] parameters is required to restrict "
-        "dimensions in a product."
-    ) in result.output
+    assert "Missing option '--details-document'" in result.output
 
     args = [
         'ami-product', 'restrict-dimensions',
@@ -218,26 +214,16 @@ def test_dimensions_usage_error(tmp_path):
     assert result.exit_code == 2
     assert "Invalid JSON provided for --details-document:" in result.output
 
-    args = [
-        'ami-product', 'restrict-dimensions',
-        '--product-id', '123456789',
-        '--details-document-file', 'non_existing_file.json'
-    ]
-    result = runner.invoke(main, args)
-    assert result.exit_code == 2
-    assert "File --details-document-file not found:" in result.output
-
     invalid_file = tmp_path / 'invalid.json'
     invalid_file.write_text('invalid_json')
     args = [
         'ami-product', 'restrict-dimensions',
         '--product-id', '123456789',
-        '--details-document-file', str(invalid_file)
+        '--details-document', str(invalid_file)
     ]
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert "Invalid JSON provided in file --details-document-file:" \
-        in result.output
+    assert "Invalid JSON provided for --details-document:" in result.output
 
     args = [
         'ami-product', 'add-dimensions',
@@ -245,11 +231,7 @@ def test_dimensions_usage_error(tmp_path):
     ]
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert (
-        "One of ['--details-document-file', "
-        "'--details-document'] parameters is required to add "
-        "dimensions to a product."
-    ) in result.output
+    assert "Missing option '--details-document'" in result.output
 
     args = [
         'ami-product', 'add-dimensions',
@@ -263,21 +245,11 @@ def test_dimensions_usage_error(tmp_path):
     args = [
         'ami-product', 'add-dimensions',
         '--product-id', '123456789',
-        '--details-document-file', 'non_existing_file.json'
+        '--details-document', str(invalid_file)
     ]
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert "File --details-document-file not found:" in result.output
-
-    args = [
-        'ami-product', 'add-dimensions',
-        '--product-id', '123456789',
-        '--details-document-file', str(invalid_file)
-    ]
-    result = runner.invoke(main, args)
-    assert result.exit_code == 2
-    assert "Invalid JSON provided in file --details-document-file:" \
-        in result.output
+    assert "Invalid JSON provided for --details-document:" in result.output
 
 
 # -------------------------------------------------
