@@ -186,7 +186,7 @@ def restrict_dimensions(
         pass
 
     try:
-        json.loads(details_document)
+        details_document = json.loads(details_document)
     except json.JSONDecodeError as e:
         raise click.BadParameter(
             f"Invalid JSON provided for --details-document: {e}"
@@ -295,7 +295,7 @@ def add_dimensions(
         pass
 
     try:
-        json.loads(details_document)
+        details_document = json.loads(details_document)
     except json.JSONDecodeError as e:
         raise click.BadParameter(
             f"Invalid JSON provided for --details-document: {e}"

@@ -21,7 +21,6 @@
 
 import boto3
 import jmespath
-import json
 
 
 def get_available_dimensions(
@@ -82,7 +81,7 @@ def get_available_dimensions(
 
 def create_restrict_dimensions_change_doc(
     product_id: str,
-    details_document: str,
+    details_document: dict,
 ) -> dict:
     """
     Creates an update ami product request dictionary to restrict dimensions.
@@ -98,14 +97,14 @@ def create_restrict_dimensions_change_doc(
             'Type': 'AmiProduct@1.0',
             'Identifier': product_id
         },
-        'DetailsDocument': json.loads(details_document)
+        'DetailsDocument': details_document
     }
     return data
 
 
 def create_add_dimensions_change_doc(
     product_id: str,
-    details_document: str,
+    details_document: dict,
 ) -> dict:
     """
     Creates an update  ami product request dictionary to add dimensions.
@@ -117,6 +116,6 @@ def create_add_dimensions_change_doc(
             'Type': 'AmiProduct@1.0',
             'Identifier': product_id
         },
-        'DetailsDocument': json.loads(details_document)
+        'DetailsDocument': details_document
     }
     return data

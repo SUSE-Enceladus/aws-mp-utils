@@ -45,7 +45,7 @@ def test_get_available_dimensions():
 
 
 def test_create_restrict_dimensions_change_doc():
-    details_doc = '{"Restrictions": ["t2.micro", "t2.small"]}'
+    details_doc = {"Restrictions": ["t2.micro", "t2.small"]}
     expected = {
         'ChangeType': 'RestrictDimensions',
         'Entity': {
@@ -63,7 +63,7 @@ def test_create_restrict_dimensions_change_doc():
 
 
 def test_create_add_dimensions_change_doc():
-    details_doc = '[{"Key": "t2.micro", "Name": "t2.micro"}]'
+    details_doc = [{"Key": "t2.micro", "Name": "t2.micro"}]
     expected = {
         'ChangeType': 'AddDimensions',
         'Entity': {
