@@ -86,12 +86,14 @@ def list_dimensions(
     Lists the available dimensions for the given product.
     """
 
-    try:
-        process_shared_options(context.obj, kwargs)
-        config_data = get_config(context.obj)
-        logger = logging.getLogger('aws_mp_utils')
-        logger.setLevel(config_data.log_level)
+    process_shared_options(context.obj, kwargs)
+    config_data = get_config(context.obj)
+    logger = logging.getLogger('aws_mp_utils')
+    logger.setLevel(config_data.log_level)
 
+    dimensions = []
+
+    try:
         client = get_mp_client(
             config_data.profile,
             config_data.region
@@ -103,24 +105,25 @@ def list_dimensions(
             product_id=product_id,
             catalog=catalog
         )
-        if dimensions:
-            headers = f"{'Key':<30} | {'Unit':<10} | {'Types':<20}"
-            rows = [headers, '-' * len(headers)]
-            for dim in dimensions:
-                key = dim.get('Key', '')
-                unit = dim.get('Unit', '')
-                types = ', '.join(dim.get('Types', []))
-                rows.append(f"{key:<30} | {unit:<10} | {types:<20}")
-            output = '\n'.join(rows)
-            echo_style(output, config_data.no_color, fg='green')
-        else:
-            output = ('No dimensions were found')
-            echo_style(output, config_data.no_color, fg='red')
     except Exception as e:
         output = str(e)
         no_color = kwargs.get('no_color', False)
         echo_style(output, no_color, fg='red')
         sys.exit(1)
+
+    if dimensions:
+        headers = f"{'Key':<30} | {'Unit':<10} | {'Types':<20}"
+        rows = [headers, '-' * len(headers)]
+        for dim in dimensions:
+            key = dim.get('Key', '')
+            unit = dim.get('Unit', '')
+            types = ', '.join(dim.get('Types', []))
+            rows.append(f"{key:<30} | {unit:<10} | {types:<20}")
+        output = '\n'.join(rows)
+        echo_style(output, config_data.no_color, fg='green')
+    else:
+        output = ('No dimensions were found')
+        echo_style(output, config_data.no_color, fg='red')
 
 
 # -----------------------------------------------------------------------------
@@ -189,11 +192,13 @@ def restrict_dimensions(
             f"Invalid JSON provided for --details-document: {e}"
         )
 
+    process_shared_options(context.obj, kwargs)
+    config_data = get_config(context.obj)
+    logger = logging.getLogger('aws_mp_utils')
+    logger.setLevel(config_data.log_level)
+    response = {}
+
     try:
-        process_shared_options(context.obj, kwargs)
-        config_data = get_config(context.obj)
-        logger = logging.getLogger('aws_mp_utils')
-        logger.setLevel(config_data.log_level)
 
         client = get_mp_client(
             config_data.profile,
@@ -219,13 +224,15 @@ def restrict_dimensions(
         with handle_errors(config_data.log_level, config_data.no_color):
             response = start_mp_change_set(**options)
 
-        output = f'Change set Id: {response["ChangeSetId"]}'
-        echo_style(output, config_data.no_color, fg='green')
     except Exception as e:
         output = str(e)
         no_color = kwargs.get('no_color', False)
         echo_style(output, no_color, fg='red')
         sys.exit(1)
+
+    if response and 'ChangeSetId' in response:
+        output = f'Change set Id: {response["ChangeSetId"]}'
+        echo_style(output, config_data.no_color, fg='green')
 
 
 # -----------------------------------------------------------------------------
@@ -294,12 +301,13 @@ def add_dimensions(
             f"Invalid JSON provided for --details-document: {e}"
         )
 
-    try:
-        process_shared_options(context.obj, kwargs)
-        config_data = get_config(context.obj)
-        logger = logging.getLogger('aws_mp_utils')
-        logger.setLevel(config_data.log_level)
+    process_shared_options(context.obj, kwargs)
+    config_data = get_config(context.obj)
+    logger = logging.getLogger('aws_mp_utils')
+    logger.setLevel(config_data.log_level)
+    response = {}
 
+    try:
         client = get_mp_client(
             config_data.profile,
             config_data.region
@@ -323,14 +331,15 @@ def add_dimensions(
             options['conflict_wait_period'] = conflict_wait_period
         with handle_errors(config_data.log_level, config_data.no_color):
             response = start_mp_change_set(**options)
-
-        output = f'Change set Id: {response["ChangeSetId"]}'
-        echo_style(output, config_data.no_color, fg='green')
     except Exception as e:
         output = str(e)
         no_color = kwargs.get('no_color', False)
         echo_style(output, no_color, fg='red')
         sys.exit(1)
+
+    if response and 'ChangeSetId' in response:
+        output = f'Change set Id: {response["ChangeSetId"]}'
+        echo_style(output, config_data.no_color, fg='green')
 
 
 # -----------------------------------------------------------------------------
@@ -359,13 +368,13 @@ def list_available_instance_types(
     """
     Lists the available instance types for the given product.
     """
+    process_shared_options(context.obj, kwargs)
+    config_data = get_config(context.obj)
+    logger = logging.getLogger('aws_mp_utils')
+    logger.setLevel(config_data.log_level)
+    output = ''
 
     try:
-        process_shared_options(context.obj, kwargs)
-        config_data = get_config(context.obj)
-        logger = logging.getLogger('aws_mp_utils')
-        logger.setLevel(config_data.log_level)
-
         client = get_mp_client(
             config_data.profile,
             config_data.region
@@ -383,15 +392,17 @@ def list_available_instance_types(
             for instance_type in instance_types:
                 rows.append(f"{instance_type:<30}")
             output = '\n'.join(rows)
-            echo_style(output, config_data.no_color, fg='green')
-        else:
-            output = ('No available instance types were found')
-            echo_style(output, config_data.no_color, fg='red')
     except Exception as e:
         output = str(e)
         no_color = kwargs.get('no_color', False)
         echo_style(output, no_color, fg='red')
         sys.exit(1)
+
+    if output:
+        echo_style(output, config_data.no_color, fg='green')
+    else:
+        output = ('No available instance types were found')
+        echo_style(output, config_data.no_color, fg='red')
 
 
 # -----------------------------------------------------------------------------
@@ -451,12 +462,13 @@ def restrict_instance_types(
         )
     instance_types = instance_types.split(',')
 
-    try:
-        process_shared_options(context.obj, kwargs)
-        config_data = get_config(context.obj)
-        logger = logging.getLogger('aws_mp_utils')
-        logger.setLevel(config_data.log_level)
+    process_shared_options(context.obj, kwargs)
+    config_data = get_config(context.obj)
+    logger = logging.getLogger('aws_mp_utils')
+    logger.setLevel(config_data.log_level)
+    response = {}
 
+    try:
         client = get_mp_client(
             config_data.profile,
             config_data.region
@@ -480,14 +492,15 @@ def restrict_instance_types(
             options['conflict_wait_period'] = conflict_wait_period
         with handle_errors(config_data.log_level, config_data.no_color):
             response = start_mp_change_set(**options)
-
-        output = f'Change set Id: {response["ChangeSetId"]}'
-        echo_style(output, config_data.no_color, fg='green')
     except Exception as e:
         output = str(e)
         no_color = kwargs.get('no_color', False)
         echo_style(output, no_color, fg='red')
         sys.exit(1)
+
+    if response and 'ChangeSetId' in response:
+        output = f'Change set Id: {response["ChangeSetId"]}'
+        echo_style(output, config_data.no_color, fg='green')
 
 
 # -----------------------------------------------------------------------------
@@ -547,12 +560,13 @@ def add_instance_types(
         )
     instance_types = instance_types.split(',')
 
-    try:
-        process_shared_options(context.obj, kwargs)
-        config_data = get_config(context.obj)
-        logger = logging.getLogger('aws_mp_utils')
-        logger.setLevel(config_data.log_level)
+    process_shared_options(context.obj, kwargs)
+    config_data = get_config(context.obj)
+    logger = logging.getLogger('aws_mp_utils')
+    logger.setLevel(config_data.log_level)
+    response = {}
 
+    try:
         client = get_mp_client(
             config_data.profile,
             config_data.region
@@ -576,11 +590,12 @@ def add_instance_types(
             options['conflict_wait_period'] = conflict_wait_period
         with handle_errors(config_data.log_level, config_data.no_color):
             response = start_mp_change_set(**options)
-
-        output = f'Change set Id: {response["ChangeSetId"]}'
-        echo_style(output, config_data.no_color, fg='green')
     except Exception as e:
         output = str(e)
         no_color = kwargs.get('no_color', False)
         echo_style(output, no_color, fg='red')
         sys.exit(1)
+
+    if response and 'ChangeSetId' in response:
+        output = f'Change set Id: {response["ChangeSetId"]}'
+        echo_style(output, config_data.no_color, fg='green')
