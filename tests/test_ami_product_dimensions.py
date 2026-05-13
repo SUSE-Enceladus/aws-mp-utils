@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from aws_mp_utils.offer_dimensions import (
+from aws_mp_utils.ami_product_dimensions import (
     get_available_dimensions,
     create_restrict_dimensions_change_doc,
     create_add_dimensions_change_doc
@@ -45,36 +45,36 @@ def test_get_available_dimensions():
 
 
 def test_create_restrict_dimensions_change_doc():
-    details_doc = '{"Restrictions": ["t2.micro", "t2.small"]}'
+    details_doc = {"Restrictions": ["t2.micro", "t2.small"]}
     expected = {
         'ChangeType': 'RestrictDimensions',
         'Entity': {
-            'Type': 'Offer@1.0',
+            'Type': 'AmiProduct@1.0',
             'Identifier': '123456789'
         },
         'DetailsDocument': {"Restrictions": ["t2.micro", "t2.small"]}
     }
 
     actual = create_restrict_dimensions_change_doc(
-        offer_id='123456789',
+        product_id='123456789',
         details_document=details_doc
     )
     assert expected == actual
 
 
 def test_create_add_dimensions_change_doc():
-    details_doc = '[{"Key": "t2.micro", "Name": "t2.micro"}]'
+    details_doc = [{"Key": "t2.micro", "Name": "t2.micro"}]
     expected = {
         'ChangeType': 'AddDimensions',
         'Entity': {
-            'Type': 'Offer@1.0',
+            'Type': 'AmiProduct@1.0',
             'Identifier': '123456789'
         },
         'DetailsDocument': [{"Key": "t2.micro", "Name": "t2.micro"}]
     }
 
     actual = create_add_dimensions_change_doc(
-        offer_id='123456789',
+        product_id='123456789',
         details_document=details_doc
     )
     assert expected == actual

@@ -21,20 +21,19 @@
 
 import boto3
 import jmespath
-import json
 
 
 def get_available_dimensions(
     client: boto3.client,
-    offer_id: str,
+    product_id: str,
     catalog: str = 'AWSMarketplace'
 ) -> list[str]:
     """
-    Lists the available dimensions for the given offer.
+    Lists the available dimensions for the given product.
     """
     entity = client.describe_entity(
         Catalog=catalog,
-        EntityId=offer_id
+        EntityId=product_id
     )
 
     """
@@ -81,41 +80,42 @@ def get_available_dimensions(
 
 
 def create_restrict_dimensions_change_doc(
-    offer_id: str,
-    details_document: str,
+    product_id: str,
+    details_document: dict,
 ) -> dict:
     """
-    Creates an update offer request dictionary to restrict dimensions.
+    Creates an update ami product request dictionary to restrict dimensions.
 
-    :param offer_id: The unique identifier of the offer in the AWS Marketplace.
+    :param product_id: The unique identifier of the product in the AWS
+    Marketplace.
     :param details_document: A JSON formatted string containing the details
-        document for restricting the offer dimensions.
+        document for restricting the product dimensions.
     """
     data = {
         'ChangeType': "RestrictDimensions",
         'Entity': {
-            'Type': 'Offer@1.0',
-            'Identifier': offer_id
+            'Type': 'AmiProduct@1.0',
+            'Identifier': product_id
         },
-        'DetailsDocument': json.loads(details_document)
+        'DetailsDocument': details_document
     }
     return data
 
 
 def create_add_dimensions_change_doc(
-    offer_id: str,
-    details_document: str,
+    product_id: str,
+    details_document: dict,
 ) -> dict:
     """
-    Creates an update offer request dictionary to add dimensions.
+    Creates an update  ami product request dictionary to add dimensions.
     """
 
     data = {
         'ChangeType': "AddDimensions",
         'Entity': {
-            'Type': 'Offer@1.0',
-            'Identifier': offer_id
+            'Type': 'AmiProduct@1.0',
+            'Identifier': product_id
         },
-        'DetailsDocument': json.loads(details_document)
+        'DetailsDocument': details_document
     }
     return data

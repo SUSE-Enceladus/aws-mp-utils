@@ -25,15 +25,15 @@ import jmespath
 
 def get_available_instance_types(
     client: boto3.client,
-    offer_id: str,
+    product_id: str,
     catalog: str = 'AWSMarketplace'
 ) -> list[str]:
     """
-    Lists the available instance types for the given offer.
+    Lists the available instance types for the given product.
     """
     entity = client.describe_entity(
         Catalog=catalog,
-        EntityId=offer_id
+        EntityId=product_id
     )
 
     """
@@ -80,21 +80,22 @@ def get_available_instance_types(
 
 
 def create_restrict_instance_types_change_doc(
-    offer_id: str,
+    product_id: str,
     instance_types: [str],
 ) -> dict:
     """
-    Creates an update offer request dictionary to restrict instance types.
+    Creates an update product request dictionary to restrict instance types.
 
-    :param offer_id: The unique identifier of the offer in the AWS Marketplace.
+    :param product_id: The unique identifier of the product in the AWS
+    Marketplace.
     :param instance_types: A list of instance types for restriction in the
-        offer.
+    ami product.
     """
     data = {
         'ChangeType': "RestrictInstanceTypes",
         'Entity': {
-            'Type': 'Offer@1.0',
-            'Identifier': offer_id
+            'Type': 'AmiProduct@1.0',
+            'Identifier': product_id
         },
         'DetailsDocument': {
             'InstanceTypes': instance_types
@@ -104,22 +105,24 @@ def create_restrict_instance_types_change_doc(
 
 
 def create_add_instance_types_change_doc(
-    offer_id: str,
+    product_id: str,
     instance_types: [str],
 ) -> dict:
     """
-    Creates an update offer request dictionary to add available instance types.
+    Creates an addInstanceTypes update product request dictionary to add
+    available instance types.
 
-    :param offer_id: The unique identifier of the offer in the AWS Marketplace.
+    :param product_id: The unique identifier of the product in the AWS
+    Marketplace.
     :param instance_types: A list of instance types for addition in the
-        offer.
+        product.
     """
 
     data = {
         'ChangeType': "AddInstanceTypes",
         'Entity': {
-            'Type': 'Offer@1.0',
-            'Identifier': offer_id
+            'Type': 'AmiProduct@1.0',
+            'Identifier': product_id
         },
         'DetailsDocument': {
             'InstanceTypes': instance_types

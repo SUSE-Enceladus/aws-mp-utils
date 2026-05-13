@@ -33,6 +33,7 @@ from aws_mp_utils.changeset import (
 from aws_mp_utils.scripts.container import container
 from aws_mp_utils.scripts.image import image
 from aws_mp_utils.scripts.offer import offer
+from aws_mp_utils.scripts.ami_product import ami_product
 from aws_mp_utils.scripts.cli_utils import (
     add_options,
     get_config,
@@ -172,6 +173,7 @@ def describe_change_set_status(
 main.add_command(image)
 main.add_command(container)
 main.add_command(offer)
+main.add_command(ami_product)
 
 
 if __name__ == '__main__':
