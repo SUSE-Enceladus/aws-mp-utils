@@ -1,3 +1,8 @@
+v0.5.0 (2026-09-08)
+===================
+
+- Adds subcommands to manage countries in offers.
+
 v0.4.0 (2026-04-24)
 ===================
 

@@ -48,6 +48,11 @@ from aws_mp_utils.scripts.cli_utils import (
     get_mp_client,
     handle_errors
 )
+from aws_mp_utils.offer_countries import (
+    get_available_countries,
+    create_update_targeting_change_doc
+)
+
 
 
 # -----------------------------------------------------------------------------
@@ -728,6 +733,151 @@ def add_instance_types(
             options['max_rechecks'] = max_rechecks
         if conflict_wait_period:
             options['conflict_wait_period'] = conflict_wait_period
+        with handle_errors(config_data.log_level, config_data.no_color):
+            response = start_mp_change_set(**options)
+
+        output = f'Change set Id: {response["ChangeSetId"]}'
+        echo_style(output, config_data.no_color, fg='green')
+    except Exception as e:
+        output = str(e)
+        no_color = kwargs.get('no_color', False)
+        echo_style(output, no_color, fg='red')
+        sys.exit(1)
+
+
+# -----------------------------------------------------------------------------
+# Offer list-available-countries command
+@offer.command(name='list-available-countries')
+@click.option(
+    '--offer-id',
+    type=click.STRING,
+    required=True,
+    help='The unique identifier for the offer in the AWS Marketplace.'
+)
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
+@add_options(shared_options)
+@click.pass_context
+def list_available_countries(
+    context,
+    catalog,
+    offer_id,
+    **kwargs
+):
+    """
+    Lists the available target countries for the given offer.
+    """
+    try:
+        process_shared_options(context.obj, kwargs)
+        config_data = get_config(context.obj)
+        logger = logging.getLogger('aws_mp_utils')
+        logger.setLevel(config_data.log_level)
+
+        client = get_mp_client(
+            config_data.profile,
+            config_data.region
+        )
+
+        countries = get_available_countries(
+            client=client,
+            offer_id=offer_id,
+            catalog=catalog
+        )
+
+        if countries:
+            output = f"Available Countries ({len(countries)}):\n" + ", ".join(countries)
+            echo_style(output, config_data.no_color, fg='green')
+        else:
+            output = 'No targeted country codes found for this offer.'
+            echo_style(output, config_data.no_color, fg='red')
+    except Exception as e:
+        output = str(e)
+        no_color = kwargs.get('no_color', False)
+        echo_style(output, no_color, fg='red')
+        sys.exit(1)
+
+
+# -----------------------------------------------------------------------------
+# Offer set-available-countries command
+@offer.command(name='set-available-countries')
+@click.option(
+    '--max-rechecks',
+    type=click.IntRange(min=0),
+    help='The maximum number of checks that are performed when a marketplace '
+         'change cannot be applied because some resource is affected by some '
+         'other ongoing change.'
+)
+@click.option(
+    '--conflict-wait-period',
+    type=click.IntRange(min=0),
+    help='The period (in seconds) that is waited between checks for the '
+         'ongoing mp change to be finished.'
+)
+@click.option(
+    '--offer-id',
+    type=click.STRING,
+    required=True,
+    help='The unique identifier for the offer in the AWS Marketplace.'
+)
+@click.option(
+    '--country-codes',
+    type=click.STRING,
+    required=True,
+    help='A comma separated list of 2-letter ISO country codes (e.g., US,DE,FR).'
+)
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
+@add_options(shared_options)
+@click.pass_context
+def set_available_countries(
+    context,
+    country_codes,
+    catalog,
+    offer_id,
+    conflict_wait_period,
+    max_rechecks,
+    **kwargs
+):
+    """
+    Sets the available target countries for the given offer.
+    """
+    country_list = [c.strip() for c in country_codes.split(',') if c.strip()]
+
+    try:
+        process_shared_options(context.obj, kwargs)
+        config_data = get_config(context.obj)
+        logger = logging.getLogger('aws_mp_utils')
+        logger.setLevel(config_data.log_level)
+
+        client = get_mp_client(
+            config_data.profile,
+            config_data.region
+        )
+
+        change_set_doc = create_update_targeting_change_doc(
+            offer_id=offer_id,
+            country_codes=country_list
+        )
+
+        options = {
+            'client': client,
+            'change_set': [change_set_doc],
+            'catalog': catalog
+        }
+
+        if max_rechecks:
+            options['max_rechecks'] = max_rechecks
+        if conflict_wait_period:
+            options['conflict_wait_period'] = conflict_wait_period
+
         with handle_errors(config_data.log_level, config_data.no_color):
             response = start_mp_change_set(**options)
 
