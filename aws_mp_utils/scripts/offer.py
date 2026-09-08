@@ -54,7 +54,6 @@ from aws_mp_utils.offer_countries import (
 )
 
 
-
 # -----------------------------------------------------------------------------
 # Offer commands function
 @click.group(name="offer")
@@ -789,7 +788,8 @@ def list_available_countries(
         )
 
         if countries:
-            output = f"Available Countries ({len(countries)}):\n" + ", ".join(countries)
+            country_str = ", ".join(countries)
+            output = f"Available Countries ({len(countries)}):\n{country_str}"
             echo_style(output, config_data.no_color, fg='green')
         else:
             output = 'No targeted country codes found for this offer.'
@@ -827,7 +827,8 @@ def list_available_countries(
     '--country-codes',
     type=click.STRING,
     required=True,
-    help='A comma separated list of 2-letter ISO country codes (e.g., US,DE,FR).'
+    help='A comma separated list of 2-letter ISO country codes '
+         '(e.g., US,DE,FR).'
 )
 @click.option(
     '--catalog',

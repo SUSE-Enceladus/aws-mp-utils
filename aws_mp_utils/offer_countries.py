@@ -21,11 +21,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import json
 import boto3
 import jmespath
-
-from aws_mp_utils.changeset import start_mp_change_set
 
 
 def get_available_countries(
@@ -37,9 +34,11 @@ def get_available_countries(
     Lists the available target countries where an offer can be sold.
 
     :param client: boto3 marketplace-catalog client instance.
-    :param offer_id: The unique identifier of the offer in the AWS Marketplace.
+    :param offer_id: The unique identifier of the offer in the
+        AWS Marketplace.
     :param catalog: The catalog name (default: 'AWSMarketplace').
-    :return: A sorted list of 2-letter ISO country codes (e.g., ['DE', 'FR', 'US']).
+    :return: A sorted list of 2-letter ISO country codes
+        (e.g., ['DE', 'FR', 'US']).
     """
     entity = client.describe_entity(
         Catalog=catalog,
@@ -77,10 +76,13 @@ def create_update_targeting_change_doc(
     country_codes: list[str]
 ) -> dict:
     """
-    Creates an update offer request dictionary to set available target countries.
+    Creates an update offer request dictionary to set available
+    target countries.
 
-    :param offer_id: The unique identifier of the offer in the AWS Marketplace.
-    :param country_codes: A list of 2-letter ISO country codes (e.g., ['US', 'DE', 'FR']).
+    :param offer_id: The unique identifier of the offer in the
+        AWS Marketplace.
+    :param country_codes: A list of 2-letter ISO country codes
+        (e.g., ['US', 'DE', 'FR']).
     :return: A dictionary structured for an UpdateTargeting change set.
     """
     data = {
