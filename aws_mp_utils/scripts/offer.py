@@ -28,7 +28,10 @@ import json
 import click
 
 from aws_mp_utils.changeset import start_mp_change_set
-from aws_mp_utils.offer import create_update_offer_change_doc
+from aws_mp_utils.offer import (
+    create_update_offer_change_doc,
+    get_offer_id_for_product
+)
 from aws_mp_utils.offer_dimensions import (
     get_available_dimensions,
     create_restrict_dimensions_change_doc,
@@ -748,9 +751,15 @@ def add_instance_types(
 # Offer list-available-countries command
 @offer.command(name='list-available-countries')
 @click.option(
+    '--product-id',
+    type=click.STRING,
+    default=None,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
     '--offer-id',
     type=click.STRING,
-    required=True,
+    default=None,
     help='The unique identifier for the offer in the AWS Marketplace.'
 )
 @click.option(
@@ -765,11 +774,17 @@ def list_available_countries(
     context,
     catalog,
     offer_id,
+    product_id,
     **kwargs
 ):
     """
-    Lists the available target countries for the given offer.
+    Lists the available target countries for the given offer or product.
     """
+    if not offer_id and not product_id:
+        raise click.BadParameter(
+            "One of ['--product-id', '--offer-id'] parameters is required."
+        )
+
     try:
         process_shared_options(context.obj, kwargs)
         config_data = get_config(context.obj)
@@ -783,12 +798,13 @@ def list_available_countries(
 
         countries = get_available_countries(
             client=client,
+            product_id=product_id,
             offer_id=offer_id,
             catalog=catalog
         )
 
         if countries:
-            country_str = ", ".join(countries)
+            country_str = ",".join(countries)
             output = f"Available Countries ({len(countries)}):\n{country_str}"
             echo_style(output, config_data.no_color, fg='green')
         else:
@@ -818,9 +834,15 @@ def list_available_countries(
          'ongoing mp change to be finished.'
 )
 @click.option(
+    '--product-id',
+    type=click.STRING,
+    default=None,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
     '--offer-id',
     type=click.STRING,
-    required=True,
+    default=None,
     help='The unique identifier for the offer in the AWS Marketplace.'
 )
 @click.option(
@@ -843,13 +865,19 @@ def set_available_countries(
     country_codes,
     catalog,
     offer_id,
+    product_id,
     conflict_wait_period,
     max_rechecks,
     **kwargs
 ):
     """
-    Sets the available target countries for the given offer.
+    Sets the available target countries for the given offer or product.
     """
+    if not offer_id and not product_id:
+        raise click.BadParameter(
+            "One of ['--product-id', '--offer-id'] parameters is required."
+        )
+
     country_list = [c.strip() for c in country_codes.split(',') if c.strip()]
 
     try:
@@ -862,6 +890,13 @@ def set_available_countries(
             config_data.profile,
             config_data.region
         )
+
+        if not offer_id:
+            offer_id = get_offer_id_for_product(
+                client=client,
+                product_id=product_id,
+                catalog=catalog
+            )
 
         change_set_doc = create_update_targeting_change_doc(
             offer_id=offer_id,

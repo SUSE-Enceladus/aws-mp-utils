@@ -495,7 +495,7 @@ def test_list_available_countries(
     runner = CliRunner()
     result = runner.invoke(main, args)
     assert result.exit_code == 0
-    assert 'DE, FR, US' in result.output
+    assert 'DE,FR,US' in result.output
 
     # No available countries found
     mock_get_available_countries.return_value = []

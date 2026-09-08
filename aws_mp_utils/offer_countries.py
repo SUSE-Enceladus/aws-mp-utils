@@ -24,22 +24,40 @@
 import boto3
 import jmespath
 
+from aws_mp_utils.exceptions import AWSMPUtilsException
+from aws_mp_utils.offer import get_offer_id_for_product
+
 
 def get_available_countries(
     client: boto3.client,
-    offer_id: str,
+    product_id: str = None,
+    offer_id: str = None,
     catalog: str = 'AWSMarketplace'
 ) -> list[str]:
     """
     Lists the available target countries where an offer can be sold.
 
     :param client: boto3 marketplace-catalog client instance.
-    :param offer_id: The unique identifier of the offer in the
+    :param product_id: The unique identifier of the product in the
         AWS Marketplace.
+    :param offer_id: The unique identifier of the offer in the
+        AWS Marketplace. If not provided, it will be retrieved using
+        the product_id.
     :param catalog: The catalog name (default: 'AWSMarketplace').
     :return: A sorted list of 2-letter ISO country codes
         (e.g., ['DE', 'FR', 'US']).
     """
+    if not offer_id:
+        if not product_id:
+            raise AWSMPUtilsException(
+                "Either 'product_id' or 'offer_id' must be provided."
+            )
+        offer_id = get_offer_id_for_product(
+            client=client,
+            product_id=product_id,
+            catalog=catalog
+        )
+
     entity = client.describe_entity(
         Catalog=catalog,
         EntityId=offer_id
@@ -49,21 +67,27 @@ def get_available_countries(
     Example describe entity output:
     {
         "DetailsDocument": {
-            "Targeting": {
-                "PositiveTargeting": {
-                    "CountryCodes": [
-                        "US",
-                        "DE",
-                        "FR"
-                    ]
+            "Rules": [
+                {
+                    "Type": "TargetingRule",
+                    "PositiveTargeting": {
+                        "CountryCodes": [
+                            "US",
+                            "DE",
+                            "FR"
+                        ]
+                    }
                 }
-            }
+            ]
         }
     }
     """
 
     details = entity['DetailsDocument']
-    query = "Targeting.PositiveTargeting.CountryCodes"
+    query = (
+        "Rules[?Type=='TargetingRule'] | [0]"
+        ".PositiveTargeting.CountryCodes"
+    )
     country_codes = jmespath.search(query, details)
 
     if country_codes is None:
