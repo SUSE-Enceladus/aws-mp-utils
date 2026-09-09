@@ -488,7 +488,7 @@ def test_list_available_countries(
     args = [
         'offer', 'list-available-countries',
         '--config-file', 'tests/data/config.yaml',
-        '--offer-id', '123456789',
+        '--product-id', 'prod-123456789',
         '--no-color'
     ]
 
@@ -511,13 +511,16 @@ def test_list_available_countries(
 
 
 # -------------------------------------------------
+@patch('aws_mp_utils.scripts.offer.get_offer_id_for_product')
 @patch('aws_mp_utils.scripts.offer.start_mp_change_set')
 @patch('aws_mp_utils.scripts.offer.get_mp_client')
 def test_set_available_countries(
     mock_client,
-    mock_start_change_set
+    mock_start_change_set,
+    mock_get_offer_id_for_product
 ):
-    """Confirm set offer available countries"""
+    """Confirm set offer available countries with product-id"""
+    mock_get_offer_id_for_product.return_value = 'offer-123456789'
     mock_start_change_set.return_value = {
         'ChangeSetId': '123456789'
     }
@@ -525,7 +528,7 @@ def test_set_available_countries(
     args = [
         'offer', 'set-available-countries',
         '--config-file', 'tests/data/config.yaml',
-        '--offer-id', '123456789',
+        '--product-id', 'prod-123456789',
         '--country-codes', 'US,DE,FR',
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
@@ -548,3 +551,26 @@ def test_set_available_countries(
     result = runner.invoke(main, args)
     assert result.exit_code == 1
     assert '403: Auth failure!' in result.output
+
+
+def test_countries_usage_error():
+    """Confirm missing options error for countries commands"""
+    args = [
+        'offer', 'list-available-countries'
+    ]
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert (
+        "One of ['--product-id', '--offer-id'] parameters is required."
+    ) in result.output
+
+    args = [
+        'offer', 'set-available-countries',
+        '--country-codes', 'US,DE'
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert (
+        "One of ['--product-id', '--offer-id'] parameters is required."
+    ) in result.output
