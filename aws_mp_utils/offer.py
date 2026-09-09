@@ -123,6 +123,7 @@ def get_ami_ids_in_mp_entity(
         return []
     return ami_ids
 
+
 def get_offer_id_for_product(
     client: boto3.client,
     product_id: str,

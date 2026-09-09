@@ -27,7 +27,7 @@ def test_get_offer_id_for_product():
             'OfferFilters': {
                 'ProductId': {
                     'ValueList': ['prod-1234']
-                }
+                },
                 'State': {
                     'ValueList': ['Draft', 'Released']
                 }
