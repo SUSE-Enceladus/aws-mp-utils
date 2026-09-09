@@ -82,10 +82,16 @@ def offer():
          'ongoing mp change to be finished.'
 )
 @click.option(
+    '--product-id',
+    type=click.STRING,
+    default=None,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
     '--offer-id',
     type=click.STRING,
-    required=True,
-    help='The unique identifier the offer in the AWS Marketplace.'
+    default=None,
+    help='The unique identifier for the offer in the AWS Marketplace.'
 )
 @click.option(
     '--name',
@@ -124,6 +130,7 @@ def update_information(
     description,
     name,
     offer_id,
+    product_id,
     conflict_wait_period,
     max_rechecks,
     **kwargs
@@ -137,6 +144,11 @@ def update_information(
     If the conflicting change set is not resolved in time an exception
     is raised.
     """
+    if not offer_id and not product_id:
+        raise click.BadParameter(
+            "One of ['--product-id', '--offer-id'] parameters is required."
+        )
+
     process_shared_options(context.obj, kwargs)
     config_data = get_config(context.obj)
     logger = logging.getLogger('aws_mp_utils')
@@ -147,26 +159,33 @@ def update_information(
         config_data.region
     )
 
-    change_doc = create_update_offer_change_doc(
-        pricing_model=pricing_model,
-        acquisition_channel=acquisition_channel,
-        description=description,
-        name=name,
-        offer_id=offer_id,
-    )
-
-    options = {
-        'client': client,
-        'change_set': [change_doc],
-        'catalog': catalog
-    }
-
-    if max_rechecks:
-        options['max_rechecks'] = max_rechecks
-    if conflict_wait_period:
-        options['conflict_wait_period'] = conflict_wait_period
-
     with handle_errors(config_data.log_level, config_data.no_color):
+        if not offer_id:
+            offer_id = get_offer_id_for_product(
+                client=client,
+                product_id=product_id,
+                catalog=catalog
+            )
+
+        change_doc = create_update_offer_change_doc(
+            pricing_model=pricing_model,
+            acquisition_channel=acquisition_channel,
+            description=description,
+            name=name,
+            offer_id=offer_id,
+        )
+
+        options = {
+            'client': client,
+            'change_set': [change_doc],
+            'catalog': catalog
+        }
+
+        if max_rechecks:
+            options['max_rechecks'] = max_rechecks
+        if conflict_wait_period:
+            options['conflict_wait_period'] = conflict_wait_period
+
         response = start_mp_change_set(**options)
 
     output = f'Change set Id: {response["ChangeSetId"]}'
@@ -177,10 +196,16 @@ def update_information(
 # Offer list-dimensions command
 @offer.command
 @click.option(
+    '--product-id',
+    type=click.STRING,
+    default=None,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
     '--offer-id',
     type=click.STRING,
-    required=True,
-    help='The unique identifier the offer in the AWS Marketplace.'
+    default=None,
+    help='The unique identifier for the offer in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -194,12 +219,17 @@ def list_dimensions(
     context,
     catalog,
     offer_id,
+    product_id,
     **kwargs
 ):
     """
-    Lists the available dimensions for the given offer.
+    Lists the available dimensions for the given offer or product.
 
     """
+    if not offer_id and not product_id:
+        raise click.BadParameter(
+            "One of ['--product-id', '--offer-id'] parameters is required."
+        )
 
     try:
         process_shared_options(context.obj, kwargs)
@@ -212,7 +242,14 @@ def list_dimensions(
             config_data.region
         )
 
-        # list current dimentions in the provided offer
+        if not offer_id:
+            offer_id = get_offer_id_for_product(
+                client=client,
+                product_id=product_id,
+                catalog=catalog
+            )
+
+        # list current dimensions in the provided offer
         dimensions = get_available_dimensions(
             client=client,
             offer_id=offer_id,
@@ -255,10 +292,16 @@ def list_dimensions(
          'ongoing mp change to be finished.'
 )
 @click.option(
+    '--product-id',
+    type=click.STRING,
+    default=None,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
     '--offer-id',
     type=click.STRING,
-    required=True,
-    help='The unique identifier the offer in the AWS Marketplace.'
+    default=None,
+    help='The unique identifier for the offer in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -290,6 +333,7 @@ def restrict_dimensions(
     details_document,
     catalog,
     offer_id,
+    product_id,
     conflict_wait_period,
     max_rechecks,
     **kwargs
@@ -298,6 +342,10 @@ def restrict_dimensions(
     Removes the provided dimensions from the given offer.
 
     """
+    if not offer_id and not product_id:
+        raise click.BadParameter(
+            "One of ['--product-id', '--offer-id'] parameters is required."
+        )
 
     if details_document is not None:
         try:
@@ -337,10 +385,17 @@ def restrict_dimensions(
             config_data.region
         )
 
-        change_set_doc = create_restrict_dimensions_change_doc(
-                offer_id=offer_id,
-                details_document=details_document
+        if not offer_id:
+            offer_id = get_offer_id_for_product(
+                client=client,
+                product_id=product_id,
+                catalog=catalog
             )
+
+        change_set_doc = create_restrict_dimensions_change_doc(
+            offer_id=offer_id,
+            details_document=details_document
+        )
 
         # Change set submission
         options = {
@@ -382,10 +437,16 @@ def restrict_dimensions(
          'ongoing mp change to be finished.'
 )
 @click.option(
+    '--product-id',
+    type=click.STRING,
+    default=None,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
     '--offer-id',
     type=click.STRING,
-    required=True,
-    help='The unique identifier the offer in the AWS Marketplace.'
+    default=None,
+    help='The unique identifier for the offer in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -417,6 +478,7 @@ def add_dimensions(
     details_document,
     catalog,
     offer_id,
+    product_id,
     conflict_wait_period,
     max_rechecks,
     **kwargs
@@ -425,6 +487,10 @@ def add_dimensions(
     Adds the provided dimensions to the given offer.
 
     """
+    if not offer_id and not product_id:
+        raise click.BadParameter(
+            "One of ['--product-id', '--offer-id'] parameters is required."
+        )
 
     if details_document is not None:
         try:
@@ -464,10 +530,17 @@ def add_dimensions(
             config_data.region
         )
 
-        change_set_doc = create_add_dimensions_change_doc(
-                offer_id=offer_id,
-                details_document=details_document
+        if not offer_id:
+            offer_id = get_offer_id_for_product(
+                client=client,
+                product_id=product_id,
+                catalog=catalog
             )
+
+        change_set_doc = create_add_dimensions_change_doc(
+            offer_id=offer_id,
+            details_document=details_document
+        )
 
         # Change set submission
         options = {
@@ -496,10 +569,16 @@ def add_dimensions(
 # Offer list-available-instance-types command
 @offer.command
 @click.option(
+    '--product-id',
+    type=click.STRING,
+    default=None,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
     '--offer-id',
     type=click.STRING,
-    required=True,
-    help='The unique identifier the offer in the AWS Marketplace.'
+    default=None,
+    help='The unique identifier for the offer in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -513,12 +592,17 @@ def list_available_instance_types(
     context,
     catalog,
     offer_id,
+    product_id,
     **kwargs
 ):
     """
-    Lists the available instance types for the given offer.
+    Lists the available instance types for the given offer or product.
 
     """
+    if not offer_id and not product_id:
+        raise click.BadParameter(
+            "One of ['--product-id', '--offer-id'] parameters is required."
+        )
 
     try:
         process_shared_options(context.obj, kwargs)
@@ -531,7 +615,14 @@ def list_available_instance_types(
             config_data.region
         )
 
-        # list current dimentions in the provided offer
+        if not offer_id:
+            offer_id = get_offer_id_for_product(
+                client=client,
+                product_id=product_id,
+                catalog=catalog
+            )
+
+        # list current dimensions in the provided offer
         instance_types = get_available_instance_types(
             client=client,
             offer_id=offer_id,
@@ -571,10 +662,16 @@ def list_available_instance_types(
          'ongoing mp change to be finished.'
 )
 @click.option(
+    '--product-id',
+    type=click.STRING,
+    default=None,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
     '--offer-id',
     type=click.STRING,
-    required=True,
-    help='The unique identifier the offer in the AWS Marketplace.'
+    default=None,
+    help='The unique identifier for the offer in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -596,6 +693,7 @@ def restrict_instance_types(
     instance_types,
     catalog,
     offer_id,
+    product_id,
     conflict_wait_period,
     max_rechecks,
     **kwargs
@@ -604,6 +702,11 @@ def restrict_instance_types(
     Restricts the provided instance types from the given offer.
 
     """
+    if not offer_id and not product_id:
+        raise click.BadParameter(
+            "One of ['--product-id', '--offer-id'] parameters is required."
+        )
+
     if '[' in instance_types or ']' in instance_types:
         raise click.BadParameter(
             'The "--instance-types" expected format is a string containing the'
@@ -622,10 +725,17 @@ def restrict_instance_types(
             config_data.region
         )
 
-        change_set_doc = create_restrict_instance_types_change_doc(
-                offer_id=offer_id,
-                instance_types=instance_types
+        if not offer_id:
+            offer_id = get_offer_id_for_product(
+                client=client,
+                product_id=product_id,
+                catalog=catalog
             )
+
+        change_set_doc = create_restrict_instance_types_change_doc(
+            offer_id=offer_id,
+            instance_types=instance_types
+        )
 
         # Change set submission
         options = {
@@ -667,10 +777,16 @@ def restrict_instance_types(
          'ongoing mp change to be finished.'
 )
 @click.option(
+    '--product-id',
+    type=click.STRING,
+    default=None,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
     '--offer-id',
     type=click.STRING,
-    required=True,
-    help='The unique identifier the offer in the AWS Marketplace.'
+    default=None,
+    help='The unique identifier for the offer in the AWS Marketplace.'
 )
 @click.option(
     '--catalog',
@@ -692,6 +808,7 @@ def add_instance_types(
     instance_types,
     catalog,
     offer_id,
+    product_id,
     conflict_wait_period,
     max_rechecks,
     **kwargs
@@ -700,6 +817,10 @@ def add_instance_types(
     Adds the provided instance types to the given offer.
 
     """
+    if not offer_id and not product_id:
+        raise click.BadParameter(
+            "One of ['--product-id', '--offer-id'] parameters is required."
+        )
 
     if '[' in instance_types or ']' in instance_types:
         raise click.BadParameter(
@@ -719,10 +840,17 @@ def add_instance_types(
             config_data.region
         )
 
-        change_set_doc = create_add_instance_types_change_doc(
-                offer_id=offer_id,
-                instance_types=instance_types
+        if not offer_id:
+            offer_id = get_offer_id_for_product(
+                client=client,
+                product_id=product_id,
+                catalog=catalog
             )
+
+        change_set_doc = create_add_instance_types_change_doc(
+            offer_id=offer_id,
+            instance_types=instance_types
+        )
 
         # Change set submission
         options = {
