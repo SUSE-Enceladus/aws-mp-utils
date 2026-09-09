@@ -25,6 +25,8 @@ import json
 import boto3
 import jmespath
 
+from aws_mp_utils.exceptions import AWSMPUtilsException
+
 
 def create_update_offer_change_doc(
     offer_id: str,
@@ -120,3 +122,35 @@ def get_ami_ids_in_mp_entity(
     if ami_ids is None:
         return []
     return ami_ids
+
+
+def get_offer_id_for_product(
+    client: boto3.client,
+    product_id: str,
+    catalog: str = 'AWSMarketplace'
+) -> str:
+    """
+    Retrieves the offer ID for a given product ID in the AWS Marketplace.
+    """
+    response = client.list_entities(
+        Catalog=catalog,
+        EntityType='Offer',
+        EntityTypeFilters={
+            'OfferFilters': {
+                'ProductId': {
+                    'ValueList': [product_id]
+                },
+                'State': {
+                    'ValueList': ['Draft', 'Released']
+                }
+            }
+        }
+    )
+
+    entity_summary = response.get('EntitySummaryList', [])
+    if not entity_summary:
+        raise AWSMPUtilsException(
+            f"No offer found for product ID '{product_id}'."
+        )
+
+    return entity_summary[0]['EntityId']
