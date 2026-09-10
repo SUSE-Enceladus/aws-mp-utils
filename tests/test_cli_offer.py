@@ -511,16 +511,16 @@ def test_list_available_countries(
 
 
 # -------------------------------------------------
-@patch('aws_mp_utils.scripts.offer.get_offer_id_for_product')
+@patch('aws_mp_utils.scripts.offer.get_public_offer_id_for_product')
 @patch('aws_mp_utils.scripts.offer.start_mp_change_set')
 @patch('aws_mp_utils.scripts.offer.get_mp_client')
 def test_set_available_countries(
     mock_client,
     mock_start_change_set,
-    mock_get_offer_id_for_product
+    mock_get_public_offer_id_for_product
 ):
     """Confirm set offer available countries with product-id"""
-    mock_get_offer_id_for_product.return_value = 'offer-123456789'
+    mock_get_public_offer_id_for_product.return_value = 'offer-123456789'
     mock_start_change_set.return_value = {
         'ChangeSetId': '123456789'
     }

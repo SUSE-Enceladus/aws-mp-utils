@@ -124,13 +124,13 @@ def get_ami_ids_in_mp_entity(
     return ami_ids
 
 
-def get_offer_id_for_product(
+def get_public_offer_id_for_product(
     client: boto3.client,
     product_id: str,
     catalog: str = 'AWSMarketplace'
 ) -> str:
     """
-    Retrieves the offer ID for a given product ID in the AWS Marketplace.
+    Retrieves the public offer ID for a given product ID in AWS Marketplace.
     """
     response = client.list_entities(
         Catalog=catalog,
@@ -139,6 +139,9 @@ def get_offer_id_for_product(
             'OfferFilters': {
                 'ProductId': {
                     'ValueList': [product_id]
+                },
+                'Targeting': {
+                    'ValueList': ['CountryCodes', 'None']
                 },
                 'State': {
                     'ValueList': ['Draft', 'Released']
@@ -150,7 +153,7 @@ def get_offer_id_for_product(
     entity_summary = response.get('EntitySummaryList', [])
     if not entity_summary:
         raise AWSMPUtilsException(
-            f"No offer found for product ID '{product_id}'."
+            f"No public offer found for product ID '{product_id}'."
         )
 
     return entity_summary[0]['EntityId']

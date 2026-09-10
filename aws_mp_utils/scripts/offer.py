@@ -30,7 +30,7 @@ import click
 from aws_mp_utils.changeset import start_mp_change_set
 from aws_mp_utils.offer import (
     create_update_offer_change_doc,
-    get_offer_id_for_product
+    get_public_offer_id_for_product
 )
 from aws_mp_utils.offer_dimensions import (
     get_available_dimensions,
@@ -161,7 +161,7 @@ def update_information(
 
     with handle_errors(config_data.log_level, config_data.no_color):
         if not offer_id:
-            offer_id = get_offer_id_for_product(
+            offer_id = get_public_offer_id_for_product(
                 client=client,
                 product_id=product_id,
                 catalog=catalog
@@ -243,7 +243,7 @@ def list_dimensions(
         )
 
         if not offer_id:
-            offer_id = get_offer_id_for_product(
+            offer_id = get_public_offer_id_for_product(
                 client=client,
                 product_id=product_id,
                 catalog=catalog
@@ -386,7 +386,7 @@ def restrict_dimensions(
         )
 
         if not offer_id:
-            offer_id = get_offer_id_for_product(
+            offer_id = get_public_offer_id_for_product(
                 client=client,
                 product_id=product_id,
                 catalog=catalog
@@ -531,7 +531,7 @@ def add_dimensions(
         )
 
         if not offer_id:
-            offer_id = get_offer_id_for_product(
+            offer_id = get_public_offer_id_for_product(
                 client=client,
                 product_id=product_id,
                 catalog=catalog
@@ -616,7 +616,7 @@ def list_available_instance_types(
         )
 
         if not offer_id:
-            offer_id = get_offer_id_for_product(
+            offer_id = get_public_offer_id_for_product(
                 client=client,
                 product_id=product_id,
                 catalog=catalog
@@ -726,7 +726,7 @@ def restrict_instance_types(
         )
 
         if not offer_id:
-            offer_id = get_offer_id_for_product(
+            offer_id = get_public_offer_id_for_product(
                 client=client,
                 product_id=product_id,
                 catalog=catalog
@@ -841,7 +841,7 @@ def add_instance_types(
         )
 
         if not offer_id:
-            offer_id = get_offer_id_for_product(
+            offer_id = get_public_offer_id_for_product(
                 client=client,
                 product_id=product_id,
                 catalog=catalog
@@ -1020,7 +1020,7 @@ def set_available_countries(
         )
 
         if not offer_id:
-            offer_id = get_offer_id_for_product(
+            offer_id = get_public_offer_id_for_product(
                 client=client,
                 product_id=product_id,
                 catalog=catalog
