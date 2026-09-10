@@ -25,7 +25,7 @@ import boto3
 import jmespath
 
 from aws_mp_utils.exceptions import AWSMPUtilsException
-from aws_mp_utils.offer import get_offer_id_for_product
+from aws_mp_utils.offer import get_public_offer_id_for_product
 
 
 def get_available_countries(
@@ -52,7 +52,7 @@ def get_available_countries(
             raise AWSMPUtilsException(
                 "Either 'product_id' or 'offer_id' must be provided."
             )
-        offer_id = get_offer_id_for_product(
+        offer_id = get_public_offer_id_for_product(
             client=client,
             product_id=product_id,
             catalog=catalog
@@ -62,26 +62,6 @@ def get_available_countries(
         Catalog=catalog,
         EntityId=offer_id
     )
-
-    """
-    Example describe entity output:
-    {
-        "DetailsDocument": {
-            "Rules": [
-                {
-                    "Type": "TargetingRule",
-                    "PositiveTargeting": {
-                        "CountryCodes": [
-                            "US",
-                            "DE",
-                            "FR"
-                        ]
-                    }
-                }
-            ]
-        }
-    }
-    """
 
     details = entity['DetailsDocument']
     query = (

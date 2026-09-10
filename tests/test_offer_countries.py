@@ -2,15 +2,15 @@ from unittest.mock import MagicMock
 import pytest
 
 from aws_mp_utils.exceptions import AWSMPUtilsException
-from aws_mp_utils.offer import get_offer_id_for_product
+from aws_mp_utils.offer import get_public_offer_id_for_product
 from aws_mp_utils.offer_countries import (
     get_available_countries,
     create_update_targeting_change_doc
 )
 
 
-def test_get_offer_id_for_product():
-    """Confirm retrieving offer_id from product_id"""
+def test_get_public_offer_id_for_product():
+    """Confirm retrieving public offer_id from product_id"""
     mock_client = MagicMock()
     mock_client.list_entities.return_value = {
         'EntitySummaryList': [
@@ -18,7 +18,7 @@ def test_get_offer_id_for_product():
         ]
     }
 
-    offer_id = get_offer_id_for_product(mock_client, 'prod-1234')
+    offer_id = get_public_offer_id_for_product(mock_client, 'prod-1234')
     assert offer_id == 'offer-9999'
     mock_client.list_entities.assert_called_once_with(
         Catalog='AWSMarketplace',
@@ -28,6 +28,9 @@ def test_get_offer_id_for_product():
                 'ProductId': {
                     'ValueList': ['prod-1234']
                 },
+                'Targeting': {
+                    'ValueList': ['CountryCodes', 'None']
+                },
                 'State': {
                     'ValueList': ['Draft', 'Released']
                 }
@@ -36,16 +39,16 @@ def test_get_offer_id_for_product():
     )
 
 
-def test_get_offer_id_for_product_not_found():
-    """Confirm exception raised when offer not found for product_id"""
+def test_get_public_offer_id_for_product_not_found():
+    """Confirm exception raised when public offer not found for product_id"""
     mock_client = MagicMock()
     mock_client.list_entities.return_value = {
         'EntitySummaryList': []
     }
 
     with pytest.raises(AWSMPUtilsException) as exc_info:
-        get_offer_id_for_product(mock_client, 'prod-invalid')
-    assert "No offer found for product ID 'prod-invalid'." in str(
+        get_public_offer_id_for_product(mock_client, 'prod-invalid')
+    assert "No public offer found for product ID 'prod-invalid'." in str(
         exc_info.value
     )
 
