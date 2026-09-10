@@ -1,3 +1,9 @@
+v0.5.0 (2026-09-10)
+===================
+
+- Add subcommands to manage countries in offers.
+- Add '--product-id' parameter to all commands.
+
 v0.4.0 (2026-04-24)
 ===================
 
