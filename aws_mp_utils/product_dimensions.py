@@ -19,59 +19,39 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import boto3
 import jmespath
-import json
+
+
+def get_product_details(
+    client: boto3.client,
+    product_id: str,
+    catalog: str = 'AWSMarketplace'
+) -> dict:
+    """Fetch product entity document from AWS Marketplace Catalog API."""
+    entity = client.describe_entity(
+        Catalog=catalog,
+        EntityId=product_id
+    )
+    details = entity['DetailsDocument']
+    if isinstance(details, str):
+        return json.loads(details)
+    return details
 
 
 def get_available_dimensions(
     client: boto3.client,
-    offer_id: str,
+    product_id: str,
     catalog: str = 'AWSMarketplace'
 ) -> list[str]:
-    """
-    Lists the available dimensions for the given offer.
-    """
-    entity = client.describe_entity(
-        Catalog=catalog,
-        EntityId=offer_id
+    """Lists the available dimensions for the given product."""
+    details = get_product_details(
+        client=client,
+        product_id=product_id,
+        catalog=catalog
     )
 
-    """
-    Example describe entity output:
-    {
-        "Details": {
-            "Versions": [
-                {
-                    "Sources": [
-                        {
-                            "Image": "ami-123",
-                            "Id": "1234"
-                        },
-                        "Compatibility": {
-                            "AvailableInstanceTypes": [
-                                ...
-                            ]
-                    ],
-                }
-            ],
-            "Dimensions": [
-                {
-                    "Name": "u-3tb1.56xlarge",
-                    "Description": "u-3tb1.56xlarge",
-                    "Key": "u-3tb1.56xlarge",
-                    "Unit": "Hrs",
-                    "Types": [
-                        "Metered"
-                    ]
-                },
-                ...
-            ]
-        }
-    }
-    """
-
-    details = entity['DetailsDocument']
     query = "Dimensions"
     dimensions = jmespath.search(query, details)
 
@@ -81,21 +61,22 @@ def get_available_dimensions(
 
 
 def create_restrict_dimensions_change_doc(
-    offer_id: str,
+    product_id: str,
     details_document: str,
+    entity_type: str = 'Product@1.0',
 ) -> dict:
-    """
-    Creates an update offer request dictionary to restrict dimensions.
+    """Creates an update product request dictionary to restrict dimensions.
 
-    :param offer_id: The unique identifier of the offer in the AWS Marketplace.
-    :param details_document: A JSON formatted string containing the details
-        document for restricting the offer dimensions.
+    :param product_id: The unique identifier of product in AWS Marketplace.
+    :param details_document: A JSON formatted string containing details doc.
+    :param entity_type: Product entity type (e.g. Product@1.0, SaaSProduct@1.0
+        or ContainerProduct@1.0).
     """
     data = {
         'ChangeType': "RestrictDimensions",
         'Entity': {
-            'Type': 'Offer@1.0',
-            'Identifier': offer_id
+            'Type': entity_type,
+            'Identifier': product_id
         },
         'DetailsDocument': json.loads(details_document)
     }
@@ -103,18 +84,16 @@ def create_restrict_dimensions_change_doc(
 
 
 def create_add_dimensions_change_doc(
-    offer_id: str,
+    product_id: str,
     details_document: str,
+    entity_type: str = 'Product@1.0',
 ) -> dict:
-    """
-    Creates an update offer request dictionary to add dimensions.
-    """
-
+    """Creates an update product request dictionary to add dimensions."""
     data = {
         'ChangeType': "AddDimensions",
         'Entity': {
-            'Type': 'Offer@1.0',
-            'Identifier': offer_id
+            'Type': entity_type,
+            'Identifier': product_id
         },
         'DetailsDocument': json.loads(details_document)
     }

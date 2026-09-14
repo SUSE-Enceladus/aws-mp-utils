@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from aws_mp_utils.exceptions import AWSMPUtilsException
-from aws_mp_utils.offer import get_public_offer_id_for_product
+from aws_mp_utils.product import get_public_offer_id_for_product
 from aws_mp_utils.offer_countries import (
     get_available_countries,
     create_update_targeting_change_doc
