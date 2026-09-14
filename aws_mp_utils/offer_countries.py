@@ -25,7 +25,7 @@ import boto3
 import jmespath
 
 from aws_mp_utils.exceptions import AWSMPUtilsException
-from aws_mp_utils.offer import get_public_offer_id_for_product
+from aws_mp_utils.product import get_public_offer_id_for_product
 
 
 def get_available_countries(

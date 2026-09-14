@@ -25,8 +25,6 @@ import json
 import boto3
 import jmespath
 
-from aws_mp_utils.exceptions import AWSMPUtilsException
-
 
 def create_update_offer_change_doc(
     offer_id: str,
@@ -77,8 +75,8 @@ def get_ami_ids_in_mp_entity(
     Provides the ami-ids in the versions for an offer.
 
     If visibility_filter is set, it only returns AMIs from versions
-    with a delivery option matching the visibility filter. If the empty string
-    is provided as visiblity_filter no filter is applied.
+    with a delivery option matching the visibility filter. If the empty
+    string is provided as visiblity_filter no filter is applied.
     """
     entity = client.describe_entity(
         Catalog=catalog,
@@ -88,7 +86,7 @@ def get_ami_ids_in_mp_entity(
     """
     Example describe entity output:
     {
-        "Details": {
+        "DetailsDocument": {
             "Versions": [
                 {
                     "Sources": [
@@ -122,38 +120,3 @@ def get_ami_ids_in_mp_entity(
     if ami_ids is None:
         return []
     return ami_ids
-
-
-def get_public_offer_id_for_product(
-    client: boto3.client,
-    product_id: str,
-    catalog: str = 'AWSMarketplace'
-) -> str:
-    """
-    Retrieves the public offer ID for a given product ID in AWS Marketplace.
-    """
-    response = client.list_entities(
-        Catalog=catalog,
-        EntityType='Offer',
-        EntityTypeFilters={
-            'OfferFilters': {
-                'ProductId': {
-                    'ValueList': [product_id]
-                },
-                'Targeting': {
-                    'ValueList': ['CountryCodes', 'None']
-                },
-                'State': {
-                    'ValueList': ['Draft', 'Released']
-                }
-            }
-        }
-    )
-
-    entity_summary = response.get('EntitySummaryList', [])
-    if not entity_summary:
-        raise AWSMPUtilsException(
-            f"No public offer found for product ID '{product_id}'."
-        )
-
-    return entity_summary[0]['EntityId']
