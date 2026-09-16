@@ -45,7 +45,7 @@ def test_update_information(
 # -------------------------------------------------
 @patch('aws_mp_utils.scripts.offer.get_available_countries')
 @patch('aws_mp_utils.scripts.offer.get_mp_client')
-def test_list_available_countries(
+def test_list_countries(
     mock_client,
     mock_get_available_countries
 ):
@@ -55,7 +55,7 @@ def test_list_available_countries(
     ]
 
     args = [
-        'offer', 'list-available-countries',
+        'offer', 'list-countries',
         '--config-file', 'tests/data/config.yaml',
         '--product-id', 'prod-123456789',
         '--no-color'
@@ -83,7 +83,7 @@ def test_list_available_countries(
 @patch('aws_mp_utils.scripts.offer.get_public_offer_id_for_product')
 @patch('aws_mp_utils.scripts.offer.start_mp_change_set')
 @patch('aws_mp_utils.scripts.offer.get_mp_client')
-def test_set_available_countries(
+def test_update_countries(
     mock_client,
     mock_start_change_set,
     mock_get_public_offer_id_for_product
@@ -95,7 +95,7 @@ def test_set_available_countries(
     }
 
     args = [
-        'offer', 'set-available-countries',
+        'offer', 'update-countries',
         '--config-file', 'tests/data/config.yaml',
         '--product-id', 'prod-123456789',
         '--country-codes', 'US,DE,FR',
@@ -125,7 +125,7 @@ def test_set_available_countries(
 def test_countries_usage_error():
     """Confirm missing options error for countries commands"""
     args = [
-        'offer', 'list-available-countries'
+        'offer', 'list-countries'
     ]
     runner = CliRunner()
     result = runner.invoke(main, args)
@@ -135,7 +135,7 @@ def test_countries_usage_error():
     ) in result.output
 
     args = [
-        'offer', 'set-available-countries',
+        'offer', 'update-countries',
         '--country-codes', 'US,DE'
     ]
     result = runner.invoke(main, args)

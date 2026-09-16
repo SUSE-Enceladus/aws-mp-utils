@@ -180,8 +180,8 @@ def update_information(
 
 
 # -----------------------------------------------------------------------------
-# Offer list-available-countries command
-@offer.command(name='list-available-countries')
+# Offer list-countries command
+@offer.command(name='list-countries')
 @click.option(
     '--product-id',
     type=click.STRING,
@@ -202,7 +202,7 @@ def update_information(
 )
 @add_options(shared_options)
 @click.pass_context
-def list_available_countries(
+def list_countries(
     context,
     catalog,
     offer_id,
@@ -250,8 +250,8 @@ def list_available_countries(
 
 
 # -----------------------------------------------------------------------------
-# Offer set-available-countries command
-@offer.command(name='set-available-countries')
+# Offer update-countries command
+@offer.command(name='update-countries')
 @click.option(
     '--max-rechecks',
     type=click.IntRange(min=0),
@@ -292,7 +292,7 @@ def list_available_countries(
 )
 @add_options(shared_options)
 @click.pass_context
-def set_available_countries(
+def update_countries(
     context,
     country_codes,
     catalog,
