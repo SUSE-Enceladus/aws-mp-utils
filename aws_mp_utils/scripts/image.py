@@ -22,11 +22,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import sys
 
 import click
 
 from aws_mp_utils.image import (
     get_image_delivery_option_id,
+    get_image_versions,
     create_add_version_change_doc,
     create_restrict_version_change_doc
 )
@@ -50,6 +52,82 @@ def image():
     """
     Commands for marketplace catalog AMI product management.
     """
+
+
+# -----------------------------------------------------------------------------
+# Image list-versions command
+@image.command(name='list-versions')
+@click.option(
+    '--entity-id',
+    type=click.STRING,
+    required=True,
+    help='The unique identifier the product in the AWS Marketplace. '
+         'The expected format of the ID is a UUID.'
+)
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
+@add_options(shared_options)
+@click.pass_context
+def list_versions(
+    context,
+    catalog,
+    entity_id,
+    **kwargs
+):
+    """
+    Lists all image versions for the given entity.
+    """
+    try:
+        process_shared_options(context.obj, kwargs)
+        config_data = get_config(context.obj)
+        logger = logging.getLogger('aws_mp_utils')
+        logger.setLevel(config_data.log_level)
+
+        client = get_mp_client(
+            config_data.profile,
+            config_data.region
+        )
+
+        versions = get_image_versions(
+            client=client,
+            entity_id=entity_id,
+            catalog=catalog
+        )
+        if versions:
+            headers = (
+                f"{'Version title':<50} | "
+                f"{'AMI ID':<25} | "
+                f"{'Visibility':<15}"
+            )
+            rows = [headers, '-' * len(headers)]
+            for version in versions:
+                title = version.get('VersionTitle', '')
+                sources = version.get('Sources', [])
+                ami_id = (
+                    sources[0].get('Image', '') if sources else ''
+                )
+                delivery_opts = version.get('DeliveryOptions', [])
+                visibility = (
+                    delivery_opts[0].get('Visibility', '')
+                    if delivery_opts else ''
+                )
+                rows.append(
+                    f"{title:<50} | {ami_id:<25} | {visibility:<15}"
+                )
+            output = '\n'.join(rows)
+            echo_style(output, config_data.no_color, fg='green')
+        else:
+            output = 'No versions were found'
+            echo_style(output, config_data.no_color, fg='red')
+    except Exception as e:
+        output = str(e)
+        no_color = kwargs.get('no_color', False)
+        echo_style(output, no_color, fg='red')
+        sys.exit(1)
 
 
 # -----------------------------------------------------------------------------
