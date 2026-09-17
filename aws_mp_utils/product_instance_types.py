@@ -19,59 +19,40 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import boto3
 import jmespath
 
 
-def get_available_instance_types(
+def get_product_details(
     client: boto3.client,
-    offer_id: str,
+    product_id: str,
     catalog: str = 'AWSMarketplace'
-) -> list[str]:
-    """
-    Lists the available instance types for the given offer.
-    """
+) -> dict:
+    """Fetch product entity document from AWS Marketplace Catalog API."""
     entity = client.describe_entity(
         Catalog=catalog,
-        EntityId=offer_id
+        EntityId=product_id
+    )
+    details = entity['DetailsDocument']
+    if isinstance(details, str):
+        return json.loads(details)
+    return details
+
+
+def get_available_instance_types(
+    client: boto3.client,
+    product_id: str,
+    catalog: str = 'AWSMarketplace'
+) -> list[str]:
+    """Lists the available instance types for the given product."""
+    details = get_product_details(
+        client=client,
+        product_id=product_id,
+        catalog=catalog
     )
 
-    """
-    Example describe entity output:
-    {
-        "Details": {
-            "Versions": [
-                {
-                    "Sources": [
-                        {
-                            "Image": "ami-123",
-                            "Id": "1234"
-                        },
-                        "Compatibility": {
-                            "AvailableInstanceTypes": [
-                                ...
-                            ]
-                    ],
-                }
-            ],
-            "Dimensions": [
-                {
-                    "Name": "u-3tb1.56xlarge",
-                    "Description": "u-3tb1.56xlarge",
-                    "Key": "u-3tb1.56xlarge",
-                    "Unit": "Hrs",
-                    "Types": [
-                        "Metered"
-                    ]
-                },
-                ...
-            ]
-        }
-    }
-    """
-
-    details = entity['DetailsDocument']
-    query = "Versions[].Sources[].Compatibility.AvailableInstanceTypes[]"
+    query = "Compatibility.AvailableInstanceTypes"
     instance_types = jmespath.search(query, details)
 
     if instance_types is None:
@@ -80,21 +61,23 @@ def get_available_instance_types(
 
 
 def create_restrict_instance_types_change_doc(
-    offer_id: str,
-    instance_types: [str],
+    product_id: str,
+    instance_types: list[str],
+    entity_type: str = 'Product@1.0',
 ) -> dict:
-    """
-    Creates an update offer request dictionary to restrict instance types.
+    """Creates an update product request dict to restrict instance types.
 
-    :param offer_id: The unique identifier of the offer in the AWS Marketplace.
+    :param product_id: The unique identifier of product in AWS Marketplace.
     :param instance_types: A list of instance types for restriction in the
-        offer.
+        product.
+    :param entity_type: Product entity type (e.g. Product@1.0,
+        SaaSProduct@1.0, ContainerProduct@1.0 or AmiProduct@1.0).
     """
     data = {
         'ChangeType': "RestrictInstanceTypes",
         'Entity': {
-            'Type': 'Offer@1.0',
-            'Identifier': offer_id
+            'Type': entity_type,
+            'Identifier': product_id
         },
         'DetailsDocument': {
             'InstanceTypes': instance_types
@@ -104,22 +87,23 @@ def create_restrict_instance_types_change_doc(
 
 
 def create_add_instance_types_change_doc(
-    offer_id: str,
-    instance_types: [str],
+    product_id: str,
+    instance_types: list[str],
+    entity_type: str = 'Product@1.0',
 ) -> dict:
-    """
-    Creates an update offer request dictionary to add available instance types.
+    """Creates an update product request dict to add instance types.
 
-    :param offer_id: The unique identifier of the offer in the AWS Marketplace.
+    :param product_id: The unique identifier of product in AWS Marketplace.
     :param instance_types: A list of instance types for addition in the
-        offer.
+        product.
+    :param entity_type: Product entity type (e.g. Product@1.0,
+        SaaSProduct@1.0, ContainerProduct@1.0 or AmiProduct@1.0).
     """
-
     data = {
         'ChangeType': "AddInstanceTypes",
         'Entity': {
-            'Type': 'Offer@1.0',
-            'Identifier': offer_id
+            'Type': entity_type,
+            'Identifier': product_id
         },
         'DetailsDocument': {
             'InstanceTypes': instance_types

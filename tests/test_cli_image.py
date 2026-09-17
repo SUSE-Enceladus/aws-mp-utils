@@ -6,6 +6,54 @@ from aws_mp_utils.scripts.cli import main
 
 
 # -------------------------------------------------
+@patch('aws_mp_utils.scripts.image.get_image_versions')
+@patch('aws_mp_utils.scripts.image.get_mp_client')
+def test_list_versions(mock_client, mock_get_image_versions):
+    """Confirm list image versions"""
+    mock_get_image_versions.return_value = [
+        {
+            "VersionTitle": "Version 1.0",
+            "Sources": [{"Image": "ami-12345678"}],
+            "DeliveryOptions": [{"Visibility": "Public"}]
+        },
+        {
+            "VersionTitle": "Version 2.0",
+            "Sources": [{"Image": "ami-87654321"}],
+            "DeliveryOptions": [{"Visibility": "Restricted"}]
+        }
+    ]
+
+    args = [
+        'image', 'list-versions',
+        '--config-file', 'tests/data/config.yaml',
+        '--entity-id', '00000000-0000-4000-8000-000000000001',
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'Version 1.0' in result.output
+    assert 'ami-12345678' in result.output
+    assert 'Public' in result.output
+    assert 'Version 2.0' in result.output
+    assert 'ami-87654321' in result.output
+    assert 'Restricted' in result.output
+
+    # No versions found
+    mock_get_image_versions.return_value = []
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'No versions were found' in result.output
+
+    # Failure
+    mock_get_image_versions.side_effect = Exception('Some error')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert 'Some error' in result.output
+
+
+# -------------------------------------------------
 @patch('aws_mp_utils.scripts.image.start_mp_change_set')
 @patch('aws_mp_utils.scripts.image.get_image_delivery_option_id')
 @patch('aws_mp_utils.scripts.image.get_mp_client')

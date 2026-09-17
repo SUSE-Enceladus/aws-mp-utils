@@ -5,8 +5,40 @@ from unittest.mock import Mock
 from aws_mp_utils.image import (
     create_restrict_version_change_doc,
     get_image_delivery_option_id,
+    get_image_versions,
     get_images_details
 )
+
+
+def test_get_image_versions():
+    details = {
+        "Versions": [
+            {
+                "VersionTitle": "Version 1.0",
+                "ReleaseNotes": "Initial release"
+            },
+            {
+                "VersionTitle": "Version 2.0",
+                "ReleaseNotes": "Update"
+            }
+        ]
+    }
+
+    entity = {
+        'DetailsDocument': details
+    }
+    client = Mock()
+    client.describe_entity.return_value = entity
+
+    versions = get_image_versions(client, '1234589')
+    assert len(versions) == 2
+    assert versions[0]['VersionTitle'] == 'Version 1.0'
+    assert versions[1]['VersionTitle'] == 'Version 2.0'
+
+    # Test no versions found
+    entity['DetailsDocument'] = {}
+    versions = get_image_versions(client, '1234589')
+    assert versions == []
 
 
 def test_create_restrict_version_change_doc():

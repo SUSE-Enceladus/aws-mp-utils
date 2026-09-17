@@ -107,6 +107,30 @@ def create_add_version_change_doc(
     return data
 
 
+def get_image_versions(
+    client: boto3.client,
+    entity_id: str,
+    catalog: str = 'AWSMarketplace'
+) -> list[dict]:
+    """
+    Lists all image versions for the given AMI product entity.
+    """
+    entity = client.describe_entity(
+        Catalog=catalog,
+        EntityId=entity_id
+    )
+
+    details = entity['DetailsDocument']
+    if isinstance(details, str):
+        details = json.loads(details)
+
+    versions = jmespath.search("Versions", details)
+
+    if versions is None:
+        return []
+    return versions
+
+
 def get_image_delivery_option_id(
     client: boto3.client,
     entity_id: str,
