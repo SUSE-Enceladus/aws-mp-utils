@@ -37,7 +37,11 @@ def test_get_offer_id(
 # -------------------------------------------------
 @patch('aws_mp_utils.scripts.product.get_available_dimensions')
 @patch('aws_mp_utils.scripts.product.get_mp_client')
-def test_list_dimensions(mock_client, mock_get_available_dimensions):
+def test_list_dimensions(
+    mock_client,
+    mock_get_available_dimensions,
+    tmp_path
+):
     """Confirm list product dimensions"""
     mock_get_available_dimensions.return_value = [
         {
@@ -65,11 +69,13 @@ def test_list_dimensions(mock_client, mock_get_available_dimensions):
     assert 't3.medium' in result.output
     assert 'u-3tb1.56xlarge' in result.output
 
-    # No dimensions found
-    mock_get_available_dimensions.return_value = []
-    result = runner.invoke(main, args)
+    # Test output to file
+    out_file = tmp_path / "dimensions.json"
+    args_file = args + ['--output-file', str(out_file)]
+    result = runner.invoke(main, args_file)
     assert result.exit_code == 0
-    assert 'No dimensions were found' in result.output
+    assert out_file.exists()
+    assert 't3.medium' in out_file.read_text()
 
     # Failure
     mock_get_available_dimensions.side_effect = Exception('Some error')
