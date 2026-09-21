@@ -457,6 +457,20 @@ def add_dimensions(
 # Product list-instance-types command
 @product.command(name='list-instance-types')
 @click.option(
+    '--output-file',
+    '-o',
+    type=click.Path(),
+    default=None,
+    help='Path to a file where the JSON output will be saved.'
+)
+@click.option(
+    '--json',
+    'json_output_flag',
+    is_flag=True,
+    default=False,
+    help='Output the result as a formatted JSON string.'
+)
+@click.option(
     '--product-id',
     type=click.STRING,
     required=True,
@@ -472,6 +486,8 @@ def add_dimensions(
 @click.pass_context
 def list_instance_types(
     context,
+    json_output_flag,
+    output_file,
     catalog,
     product_id,
     **kwargs
@@ -496,7 +512,17 @@ def list_instance_types(
             product_id=product_id,
             catalog=catalog
         )
-        if instance_types:
+
+        if output_file:
+            json_output = json.dumps(instance_types, indent=4)
+            with open(output_file, 'w') as f:
+                f.write(json_output)
+            output = f"Instance types output written to {output_file}"
+            echo_style(output, config_data.no_color, fg='green')
+        elif json_output_flag:
+            json_output = json.dumps(instance_types, indent=4)
+            echo_style(json_output, config_data.no_color, fg='green')
+        elif instance_types:
             headers = f"{'Instance type':<30}"
             rows = [headers, '-' * len(headers)]
             for instance_type in instance_types:
@@ -515,7 +541,7 @@ def list_instance_types(
 
 # -----------------------------------------------------------------------------
 # Product restrict instance types command
-@product.command
+@product.command(name='restrict-instance-types')
 @click.option(
     '--max-rechecks',
     type=click.IntRange(min=0),
@@ -536,24 +562,48 @@ def list_instance_types(
     help='The unique identifier for the product in the AWS Marketplace.'
 )
 @click.option(
+    '--entity-type',
+    type=click.Choice([
+        'AmiProduct@1.0',
+        'SaaSProduct@1.0',
+        'ContainerProduct@1.0',
+        'Product@1.0'
+    ]),
+    default='AmiProduct@1.0',
+    help='The entity type of the product.'
+)
+@click.option(
     '--catalog',
     type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
     default='AWSMarketplace',
     help='The catalog related to the request.'
 )
 @click.option(
+    '--details-document',
     '--instance-types',
+    'details_document',
     type=click.STRING,
-    required=True,
-    help='A comma separated list of containing the instance types that will '
-         'be restricted in the product.'
+    default=None,
+    help='A JSON formatted string or comma separated list of instance types '
+         'to be restricted.'
+)
+@click.option(
+    '--details-document-file',
+    '--instance-types-file',
+    'details_document_file',
+    type=click.STRING,
+    default=None,
+    help='A path to a file containing a JSON formatted string or comma '
+         'separated list of instance types.'
 )
 @add_options(shared_options)
 @click.pass_context
 def restrict_instance_types(
     context,
-    instance_types,
+    details_document_file,
+    details_document,
     catalog,
+    entity_type,
     product_id,
     conflict_wait_period,
     max_rechecks,
@@ -563,12 +613,68 @@ def restrict_instance_types(
     Restricts the provided instance types from the given product.
 
     """
-    if '[' in instance_types or ']' in instance_types:
+    if details_document is not None:
+        if details_document.strip().startswith(('{', '[')):
+            try:
+                json.loads(details_document)
+            except json.JSONDecodeError as e:
+                raise click.BadParameter(
+                    f"Invalid JSON provided for --details-document: {e}"
+                )
+        raw_doc = details_document
+    elif details_document_file is not None:
+        try:
+            with open(details_document_file, 'r') as f:
+                raw_doc = f.read()
+                if (
+                    raw_doc.strip().startswith(('{', '['))
+                    or details_document_file.endswith('.json')
+                ):
+                    json.loads(raw_doc)
+        except json.JSONDecodeError as e:
+            raise click.BadParameter(
+                f"Invalid JSON provided in file --details-document-file: {e}"
+            )
+        except FileNotFoundError as e:
+            raise click.BadParameter(
+                f"File --details-document-file not found: {e}"
+            )
+    else:
         raise click.BadParameter(
-            'The "--instance-types" expected format is a string containing the'
-            'instance types separated by commas.'
+            "One of ['--details-document-file', "
+            "'--details-document'] parameters is required to restrict "
+            "instance types in a product."
         )
-    instance_types = instance_types.split(',')
+
+    try:
+        parsed = json.loads(raw_doc)
+        if isinstance(parsed, list):
+            instance_types = [
+                str(i).strip() for i in parsed if str(i).strip()
+            ]
+        elif isinstance(parsed, dict):
+            types_list = (
+                parsed.get('InstanceTypes')
+                or parsed.get(
+                    'Compatibility', {}
+                ).get('AvailableInstanceTypes')
+            )
+            if isinstance(types_list, list):
+                instance_types = [
+                    str(i).strip() for i in types_list if str(i).strip()
+                ]
+            else:
+                instance_types = []
+        elif isinstance(parsed, str):
+            instance_types = [
+                i.strip() for i in parsed.split(',') if i.strip()
+            ]
+        else:
+            instance_types = []
+    except (json.JSONDecodeError, TypeError):
+        instance_types = [
+            i.strip() for i in raw_doc.split(',') if i.strip()
+        ]
 
     try:
         process_shared_options(context.obj, kwargs)
@@ -583,7 +689,8 @@ def restrict_instance_types(
 
         change_set_doc = create_restrict_instance_types_change_doc(
             product_id=product_id,
-            instance_types=instance_types
+            instance_types=instance_types,
+            entity_type=entity_type
         )
 
         # Change set submission
@@ -611,7 +718,7 @@ def restrict_instance_types(
 
 # -----------------------------------------------------------------------------
 # Product add-instance-types command
-@product.command
+@product.command(name='add-instance-types')
 @click.option(
     '--max-rechecks',
     type=click.IntRange(min=0),
@@ -632,24 +739,48 @@ def restrict_instance_types(
     help='The unique identifier for the product in the AWS Marketplace.'
 )
 @click.option(
+    '--entity-type',
+    type=click.Choice([
+        'AmiProduct@1.0',
+        'SaaSProduct@1.0',
+        'ContainerProduct@1.0',
+        'Product@1.0'
+    ]),
+    default='AmiProduct@1.0',
+    help='The entity type of the product.'
+)
+@click.option(
     '--catalog',
     type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
     default='AWSMarketplace',
     help='The catalog related to the request.'
 )
 @click.option(
+    '--details-document',
     '--instance-types',
+    'details_document',
     type=click.STRING,
-    required=True,
-    help='A comma separated list of containing the instance types that will '
-         'be added to the product.'
+    default=None,
+    help='A JSON formatted string or comma separated list of instance types '
+         'to be added.'
+)
+@click.option(
+    '--details-document-file',
+    '--instance-types-file',
+    'details_document_file',
+    type=click.STRING,
+    default=None,
+    help='A path to a file containing a JSON formatted string or comma '
+         'separated list of instance types.'
 )
 @add_options(shared_options)
 @click.pass_context
 def add_instance_types(
     context,
-    instance_types,
+    details_document_file,
+    details_document,
     catalog,
+    entity_type,
     product_id,
     conflict_wait_period,
     max_rechecks,
@@ -659,12 +790,68 @@ def add_instance_types(
     Adds the provided instance types to the given product.
 
     """
-    if '[' in instance_types or ']' in instance_types:
+    if details_document is not None:
+        if details_document.strip().startswith(('{', '[')):
+            try:
+                json.loads(details_document)
+            except json.JSONDecodeError as e:
+                raise click.BadParameter(
+                    f"Invalid JSON provided for --details-document: {e}"
+                )
+        raw_doc = details_document
+    elif details_document_file is not None:
+        try:
+            with open(details_document_file, 'r') as f:
+                raw_doc = f.read()
+                if (
+                    raw_doc.strip().startswith(('{', '['))
+                    or details_document_file.endswith('.json')
+                ):
+                    json.loads(raw_doc)
+        except json.JSONDecodeError as e:
+            raise click.BadParameter(
+                f"Invalid JSON provided in file --details-document-file: {e}"
+            )
+        except FileNotFoundError as e:
+            raise click.BadParameter(
+                f"File --details-document-file not found: {e}"
+            )
+    else:
         raise click.BadParameter(
-            'The "--instance-types" expected format is a string containing the'
-            'instance types separated by commas.'
+            "One of ['--details-document-file', "
+            "'--details-document'] parameters is required to add "
+            "instance types in a product."
         )
-    instance_types = instance_types.split(',')
+
+    try:
+        parsed = json.loads(raw_doc)
+        if isinstance(parsed, list):
+            instance_types = [
+                str(i).strip() for i in parsed if str(i).strip()
+            ]
+        elif isinstance(parsed, dict):
+            types_list = (
+                parsed.get('InstanceTypes')
+                or parsed.get(
+                    'Compatibility', {}
+                ).get('AvailableInstanceTypes')
+            )
+            if isinstance(types_list, list):
+                instance_types = [
+                    str(i).strip() for i in types_list if str(i).strip()
+                ]
+            else:
+                instance_types = []
+        elif isinstance(parsed, str):
+            instance_types = [
+                i.strip() for i in parsed.split(',') if i.strip()
+            ]
+        else:
+            instance_types = []
+    except (json.JSONDecodeError, TypeError):
+        instance_types = [
+            i.strip() for i in raw_doc.split(',') if i.strip()
+        ]
 
     try:
         process_shared_options(context.obj, kwargs)
@@ -679,7 +866,8 @@ def add_instance_types(
 
         change_set_doc = create_add_instance_types_change_doc(
             product_id=product_id,
-            instance_types=instance_types
+            instance_types=instance_types,
+            entity_type=entity_type
         )
 
         # Change set submission

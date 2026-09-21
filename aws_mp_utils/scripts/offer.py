@@ -420,6 +420,13 @@ def update_prices(
 # Offer list-countries command
 @offer.command(name='list-countries')
 @click.option(
+    '--output-file',
+    '-o',
+    type=click.Path(),
+    default=None,
+    help='Path to a file where the JSON output will be saved.'
+)
+@click.option(
     '--product-id',
     type=click.STRING,
     default=None,
@@ -441,6 +448,7 @@ def update_prices(
 @click.pass_context
 def list_countries(
     context,
+    output_file,
     catalog,
     offer_id,
     product_id,
@@ -472,7 +480,13 @@ def list_countries(
             catalog=catalog
         )
 
-        if countries:
+        if output_file:
+            json_output = json.dumps(countries, indent=4)
+            with open(output_file, 'w') as f:
+                f.write(json_output)
+            output = f"Countries output written to {output_file}"
+            echo_style(output, config_data.no_color, fg='green')
+        elif countries:
             country_str = ",".join(countries)
             output = f"Available Countries ({len(countries)}):\n{country_str}"
             echo_style(output, config_data.no_color, fg='green')
@@ -515,23 +529,36 @@ def list_countries(
     help='The unique identifier for the offer in the AWS Marketplace.'
 )
 @click.option(
-    '--country-codes',
-    type=click.STRING,
-    required=True,
-    help='A comma separated list of 2-letter ISO country codes '
-         '(e.g., US,DE,FR).'
-)
-@click.option(
     '--catalog',
     type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
     default='AWSMarketplace',
     help='The catalog related to the request.'
 )
+@click.option(
+    '--details-document',
+    '--countries',
+    '--country-codes',
+    'details_document',
+    type=click.STRING,
+    default=None,
+    help='A JSON formatted string or comma separated list of 2-letter ISO '
+         'country codes (e.g., US,DE,FR).'
+)
+@click.option(
+    '--details-document-file',
+    '--countries-file',
+    'details_document_file',
+    type=click.STRING,
+    default=None,
+    help='A path to a file containing a JSON formatted string or comma '
+         'separated list of 2-letter ISO country codes.'
+)
 @add_options(shared_options)
 @click.pass_context
 def update_countries(
     context,
-    country_codes,
+    details_document_file,
+    details_document,
     catalog,
     offer_id,
     product_id,
@@ -547,7 +574,66 @@ def update_countries(
             "One of ['--product-id', '--offer-id'] parameters is required."
         )
 
-    country_list = [c.strip() for c in country_codes.split(',') if c.strip()]
+    if details_document is not None:
+        if details_document.strip().startswith(('{', '[')):
+            try:
+                json.loads(details_document)
+            except json.JSONDecodeError as e:
+                raise click.BadParameter(
+                    f"Invalid JSON provided for --details-document: {e}"
+                )
+        raw_doc = details_document
+    elif details_document_file is not None:
+        try:
+            with open(details_document_file, 'r') as f:
+                raw_doc = f.read()
+                if (
+                    raw_doc.strip().startswith(('{', '['))
+                    or details_document_file.endswith('.json')
+                ):
+                    json.loads(raw_doc)
+        except json.JSONDecodeError as e:
+            raise click.BadParameter(
+                f"Invalid JSON provided in file --details-document-file: {e}"
+            )
+        except FileNotFoundError as e:
+            raise click.BadParameter(
+                f"File --details-document-file not found: {e}"
+            )
+    else:
+        raise click.BadParameter(
+            "One of ['--details-document-file', "
+            "'--details-document'] parameters is required to update "
+            "countries in an offer."
+        )
+
+    try:
+        parsed = json.loads(raw_doc)
+        if isinstance(parsed, list):
+            country_list = [
+                str(c).strip() for c in parsed if str(c).strip()
+            ]
+        elif isinstance(parsed, dict):
+            codes = (
+                parsed.get('PositiveTargeting', {}).get('CountryCodes')
+                or parsed.get('CountryCodes')
+            )
+            if isinstance(codes, list):
+                country_list = [
+                    str(c).strip() for c in codes if str(c).strip()
+                ]
+            else:
+                country_list = []
+        elif isinstance(parsed, str):
+            country_list = [
+                c.strip() for c in parsed.split(',') if c.strip()
+            ]
+        else:
+            country_list = []
+    except (json.JSONDecodeError, TypeError):
+        country_list = [
+            c.strip() for c in raw_doc.split(',') if c.strip()
+        ]
 
     try:
         process_shared_options(context.obj, kwargs)

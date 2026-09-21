@@ -100,6 +100,7 @@ def test_restrict_dimensions(
         'product', 'restrict-dimensions',
         '--config-file', 'tests/data/config.yaml',
         '--product-id', '123456789',
+        '--entity-type', 'SaaSProduct@1.0',
         '--details-document', '{"Restrictions": ["t2.micro", "t2.small"]}',
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
@@ -140,6 +141,7 @@ def test_add_dimensions(
         'product', 'add-dimensions',
         '--config-file', 'tests/data/config.yaml',
         '--product-id', '123456789',
+        '--entity-type', 'AmiProduct@1.0',
         '--details-document', '[{"Key": "t2.micro", "Name": "t2.micro"}]',
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
@@ -271,8 +273,8 @@ def test_dimensions_usage_error(tmp_path):
     ]
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert "Invalid JSON provided in file --details-document-file:" \
-        in result.output
+    assert ("Invalid JSON provided in file "
+            "--details-document-file:") in result.output
 
     args = [
         'product', 'add-dimensions',
@@ -311,8 +313,8 @@ def test_dimensions_usage_error(tmp_path):
     ]
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert "Invalid JSON provided in file --details-document-file:" \
-        in result.output
+    assert ("Invalid JSON provided in file "
+            "--details-document-file:") in result.output
 
 
 # -------------------------------------------------
@@ -320,7 +322,8 @@ def test_dimensions_usage_error(tmp_path):
 @patch('aws_mp_utils.scripts.product.get_mp_client')
 def test_list_instance_types(
     mock_client,
-    mock_get_available_instance_types
+    mock_get_available_instance_types,
+    tmp_path
 ):
     """Confirm list available instance types"""
     mock_get_available_instance_types.return_value = [
@@ -340,6 +343,28 @@ def test_list_instance_types(
     assert result.exit_code == 0
     assert 't3.medium' in result.output
     assert 'u-3tb1.56xlarge' in result.output
+
+    # Test JSON output to stdout
+    args_json = args + ['--json']
+    result = runner.invoke(main, args_json)
+    assert result.exit_code == 0
+    assert '"t3.medium"' in result.output
+
+    # Test JSON output to file via --output-file
+    out_file = tmp_path / "instance_types.json"
+    args_file = args + ['--output-file', str(out_file)]
+    result = runner.invoke(main, args_file)
+    assert result.exit_code == 0
+    assert out_file.exists()
+    assert '"t3.medium"' in out_file.read_text()
+
+    # Test JSON output to file via -o short option
+    out_file_short = tmp_path / "instance_types_short.json"
+    args_file_short = args + ['-o', str(out_file_short)]
+    result = runner.invoke(main, args_file_short)
+    assert result.exit_code == 0
+    assert out_file_short.exists()
+    assert '"t3.medium"' in out_file_short.read_text()
 
     # No available instance types found
     mock_get_available_instance_types.return_value = []
@@ -371,6 +396,7 @@ def test_restrict_instance_types(
         '--config-file', 'tests/data/config.yaml',
         '--product-id', '123456789',
         '--instance-types', 't2.micro,t2.small',
+        '--entity-type', 'AmiProduct@1.0',
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
         '--no-color'
@@ -378,6 +404,23 @@ def test_restrict_instance_types(
 
     runner = CliRunner()
     result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+    # Check that AmiProduct@1.0 was passed as Entity Type
+    call_kwargs = mock_start_change_set.call_args.kwargs
+    cs_doc = call_kwargs['change_set'][0]
+    assert cs_doc['Entity']['Type'] == 'AmiProduct@1.0'
+
+    # Test with --details-document
+    args_doc = [
+        'product', 'restrict-instance-types',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--details-document', '["t2.micro", "t2.small"]',
+        '--no-color'
+    ]
+    result = runner.invoke(main, args_doc)
     assert result.exit_code == 0
     assert 'Change set Id: 123456789' in result.output
 
@@ -411,6 +454,7 @@ def test_add_instance_types(
         '--config-file', 'tests/data/config.yaml',
         '--product-id', '123456789',
         '--instance-types', 't2.micro,t2.small',
+        '--entity-type', 'AmiProduct@1.0',
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
         '--no-color'
@@ -418,6 +462,23 @@ def test_add_instance_types(
 
     runner = CliRunner()
     result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+    # Check that AmiProduct@1.0 was passed as Entity Type
+    call_kwargs = mock_start_change_set.call_args.kwargs
+    cs_doc = call_kwargs['change_set'][0]
+    assert cs_doc['Entity']['Type'] == 'AmiProduct@1.0'
+
+    # Test with --details-document
+    args_doc = [
+        'product', 'add-instance-types',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--details-document', '["t2.micro", "t2.small"]',
+        '--no-color'
+    ]
+    result = runner.invoke(main, args_doc)
     assert result.exit_code == 0
     assert 'Change set Id: 123456789' in result.output
 
@@ -434,7 +495,97 @@ def test_add_instance_types(
     assert '403: Auth failure!' in result.output
 
 
-def test_instance_types_usage_error():
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.product.start_mp_change_set')
+@patch('aws_mp_utils.scripts.product.get_mp_client')
+def test_restrict_instance_types_with_file(
+    mock_client,
+    mock_start_change_set,
+    tmp_path
+):
+    """Confirm restrict product instance types with a file"""
+    mock_start_change_set.return_value = {
+        'ChangeSetId': '123456789'
+    }
+
+    doc_file = tmp_path / "types.json"
+    doc_file.write_text('["t2.micro", "t2.small"]')
+
+    args = [
+        'product', 'restrict-instance-types',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--details-document-file', str(doc_file),
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+    # Test with --instance-types-file
+    txt_file = tmp_path / "types.txt"
+    txt_file.write_text('t2.micro, t2.small')
+
+    args_txt = [
+        'product', 'restrict-instance-types',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--instance-types-file', str(txt_file),
+        '--no-color'
+    ]
+    result = runner.invoke(main, args_txt)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.product.start_mp_change_set')
+@patch('aws_mp_utils.scripts.product.get_mp_client')
+def test_add_instance_types_with_file(
+    mock_client,
+    mock_start_change_set,
+    tmp_path
+):
+    """Confirm add product instance types with a file"""
+    mock_start_change_set.return_value = {
+        'ChangeSetId': '123456789'
+    }
+
+    doc_file = tmp_path / "types.json"
+    doc_file.write_text('["t2.micro", "t2.small"]')
+
+    args = [
+        'product', 'add-instance-types',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--details-document-file', str(doc_file),
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+    # Test with --instance-types-file
+    txt_file = tmp_path / "types.txt"
+    txt_file.write_text('t2.micro, t2.small')
+
+    args_txt = [
+        'product', 'add-instance-types',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--instance-types-file', str(txt_file),
+        '--no-color'
+    ]
+    result = runner.invoke(main, args_txt)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+
+def test_instance_types_usage_error(tmp_path):
     """Confirm product instance types usage error"""
     args = [
         'product', 'restrict-instance-types',
@@ -444,28 +595,50 @@ def test_instance_types_usage_error():
     runner = CliRunner()
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert " Missing option '--instance-types'" in result.output
+    assert (
+        "One of ['--details-document-file', "
+        "'--details-document'] parameters is required to restrict "
+        "instance types in a product."
+    ) in result.output
 
     args = [
         'product', 'add-instance-types',
-        '--product-id', '123456789', '--instance-types',
-        '["t2.micro", "t2.small"]'
+        '--product-id', '123456789'
     ]
-
-    runner = CliRunner()
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert 'The "--instance-types" expected format is a string containing' \
-        in result.output
+    assert (
+        "One of ['--details-document-file', "
+        "'--details-document'] parameters is required to add "
+        "instance types in a product."
+    ) in result.output
 
     args = [
         'product', 'restrict-instance-types',
-        '--product-id', '123456789', '--instance-types',
-        '["t2.micro", "t2.small"]'
+        '--product-id', '123456789',
+        '--details-document', '{"invalid":'
     ]
-
-    runner = CliRunner()
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert 'The "--instance-types" expected format is a string containing' \
-        in result.output
+    assert "Invalid JSON provided for --details-document:" in result.output
+
+    args = [
+        'product', 'restrict-instance-types',
+        '--product-id', '123456789',
+        '--details-document-file', 'non_existing_file.json'
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert "File --details-document-file not found:" in result.output
+
+    invalid_file = tmp_path / 'invalid.json'
+    invalid_file.write_text('{"invalid":')
+    args = [
+        'product', 'restrict-instance-types',
+        '--product-id', '123456789',
+        '--details-document-file', str(invalid_file)
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert ("Invalid JSON provided in file "
+            "--details-document-file:") in result.output
