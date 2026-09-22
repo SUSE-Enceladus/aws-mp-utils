@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 
 from click.testing import CliRunner
@@ -243,7 +244,7 @@ def test_list_countries(
     result = runner.invoke(main, args_file)
     assert result.exit_code == 0
     assert out_file.exists()
-    assert '["DE", "FR", "US"]' in out_file.read_text().replace('\n', '')
+    assert json.loads(out_file.read_text()) == ["DE", "FR", "US"]
 
     # No available countries found
     mock_get_available_countries.return_value = []
