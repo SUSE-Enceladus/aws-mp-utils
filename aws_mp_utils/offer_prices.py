@@ -50,7 +50,8 @@ def get_offer_prices(
     """
     if product_id and offer_id:
         raise AWSMPUtilsException(
-            "Both 'product_id' and 'offer_id' cannot be provided at the same time."
+            "Both 'product_id' and 'offer_id' cannot be "
+            "provided at the same time."
         )
 
     if not offer_id:

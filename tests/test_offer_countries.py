@@ -141,6 +141,8 @@ def test_get_available_countries_both_ids():
             product_id='prod-12345',
             offer_id='offer-12345'
         )
-    assert "Both 'product_id' and 'offer_id' cannot be provided at the same time." in str(
-        exc_info.value
+    msg = (
+        "Both 'product_id' and 'offer_id' cannot be "
+        "provided at the same time."
     )
+    assert msg in str(exc_info.value)
