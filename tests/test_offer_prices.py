@@ -109,3 +109,17 @@ def test_create_update_pricing_change_doc_dict_input():
         }
     }
     assert doc == expected
+
+
+def test_get_offer_prices_both_ids():
+    """Confirm exception raised when both product_id and offer_id given"""
+    mock_client = MagicMock()
+    with pytest.raises(AWSMPUtilsException) as exc_info:
+        get_offer_prices(
+            client=mock_client,
+            product_id='prod-12345',
+            offer_id='offer-12345'
+        )
+    assert "Both 'product_id' and 'offer_id' cannot be provided at the same time." in str(
+        exc_info.value
+    )

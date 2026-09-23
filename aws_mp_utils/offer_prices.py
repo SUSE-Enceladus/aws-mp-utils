@@ -48,6 +48,11 @@ def get_offer_prices(
     :return: A list of terms dictionary objects from DetailsDocument.Terms,
         excluding LegalTerm and SupportTerm.
     """
+    if product_id and offer_id:
+        raise AWSMPUtilsException(
+            "Both 'product_id' and 'offer_id' cannot be provided at the same time."
+        )
+
     if not offer_id:
         if not product_id:
             raise AWSMPUtilsException(

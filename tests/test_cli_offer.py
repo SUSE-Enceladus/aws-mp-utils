@@ -161,6 +161,18 @@ def test_update_prices_with_file(
 def test_prices_usage_error(tmp_path):
     """Confirm offer prices usage error"""
     args = [
+        'offer', 'list-prices',
+        '--product-id', 'prod-12345',
+        '--offer-id', 'offer-12345'
+    ]
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert (
+        "Both '--product-id' and '--offer-id' cannot be provided at the same time."
+    ) in result.output
+
+    args = [
         'offer', 'list-prices'
     ]
     runner = CliRunner()
@@ -376,6 +388,18 @@ def test_update_countries_with_file(
 
 def test_countries_usage_error(tmp_path):
     """Confirm missing options error for countries commands"""
+    args = [
+        'offer', 'list-countries',
+        '--product-id', 'prod-12345',
+        '--offer-id', 'offer-12345'
+    ]
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert (
+        "Both '--product-id' and '--offer-id' cannot be provided at the same time."
+    ) in result.output
+
     args = [
         'offer', 'list-countries'
     ]

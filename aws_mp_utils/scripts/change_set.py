@@ -215,6 +215,10 @@ def merge(
     """
     Merges multiple change set JSON files into a single JSON array file.
     """
+    if offer_id and product_id:
+        raise click.BadParameter(
+            "Both '--product-id' and '--offer-id' cannot be provided at the same time."
+        )
     try:
         process_shared_options(context.obj, kwargs)
         config_data = get_config(context.obj)
@@ -498,6 +502,10 @@ def submit(
     """
     Submits a change set to the AWS Marketplace Catalog API.
     """
+    if offer_id and product_id:
+        raise click.BadParameter(
+            "Both '--product-id' and '--offer-id' cannot be provided at the same time."
+        )
     if change_set_doc is not None:
         try:
             raw_data = json.loads(change_set_doc)
