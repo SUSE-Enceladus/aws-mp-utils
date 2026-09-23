@@ -420,6 +420,13 @@ def update_prices(
 # Offer list-countries command
 @offer.command(name='list-countries')
 @click.option(
+    '--output-file',
+    '-o',
+    type=click.Path(),
+    default=None,
+    help='Path to a file where the JSON output will be saved.'
+)
+@click.option(
     '--product-id',
     type=click.STRING,
     default=None,
@@ -441,6 +448,7 @@ def update_prices(
 @click.pass_context
 def list_countries(
     context,
+    output_file,
     catalog,
     offer_id,
     product_id,
@@ -472,7 +480,13 @@ def list_countries(
             catalog=catalog
         )
 
-        if countries:
+        if output_file:
+            json_output = json.dumps(countries, indent=4)
+            with open(output_file, 'w') as f:
+                f.write(json_output)
+            output = f"Countries output written to {output_file}"
+            echo_style(output, config_data.no_color, fg='green')
+        elif countries:
             country_str = ",".join(countries)
             output = f"Available Countries ({len(countries)}):\n{country_str}"
             echo_style(output, config_data.no_color, fg='green')
