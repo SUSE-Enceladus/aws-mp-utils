@@ -494,6 +494,7 @@ def test_add_instance_types(
     assert result.exit_code == 1
     assert '403: Auth failure!' in result.output
 
+
 # -------------------------------------------------
 @patch('aws_mp_utils.scripts.product.start_mp_change_set')
 @patch('aws_mp_utils.scripts.product.get_mp_client')
@@ -638,4 +639,4 @@ def test_instance_types_usage_error(tmp_path):
     result = runner.invoke(main, args)
     assert result.exit_code == 2
     assert ("Invalid JSON provided in file "
-            "--details-document-file:") in result.output        
+            "--details-document-file:") in result.output
