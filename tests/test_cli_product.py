@@ -588,7 +588,8 @@ def test_add_instance_types_with_file(
 def test_instance_types_usage_error(tmp_path):
     """Confirm product instance types usage error"""
     args = [
-        'product', 'restrict-instance-types'
+        'product', 'restrict-instance-types',
+        '--product-id', '123456789'
     ]
     runner = CliRunner()
     result = runner.invoke(main, args)
