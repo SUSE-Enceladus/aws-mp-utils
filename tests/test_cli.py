@@ -286,7 +286,10 @@ def test_submit_change_set_usage_error(tmp_path):
     runner = CliRunner()
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert "Both '--product-id' and '--offer-id' cannot be provided at the same time." in result.output
+    assert (
+        "Both '--product-id' and '--offer-id' cannot be "
+        "provided at the same time."
+    ) in result.output
 
     args = [
         'change-set', 'submit'

@@ -217,7 +217,8 @@ def merge(
     """
     if offer_id and product_id:
         raise click.BadParameter(
-            "Both '--product-id' and '--offer-id' cannot be provided at the same time."
+            "Both '--product-id' and '--offer-id' cannot be "
+            "provided at the same time."
         )
     try:
         process_shared_options(context.obj, kwargs)
@@ -504,7 +505,8 @@ def submit(
     """
     if offer_id and product_id:
         raise click.BadParameter(
-            "Both '--product-id' and '--offer-id' cannot be provided at the same time."
+            "Both '--product-id' and '--offer-id' cannot be "
+            "provided at the same time."
         )
     if change_set_doc is not None:
         try:

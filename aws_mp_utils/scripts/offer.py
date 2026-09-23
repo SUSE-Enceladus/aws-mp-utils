@@ -138,7 +138,8 @@ def update_information(
     """
     if offer_id and product_id:
         raise click.BadParameter(
-            "Both '--product-id' and '--offer-id' cannot be provided at the same time."
+            "Both '--product-id' and '--offer-id' cannot be "
+            "provided at the same time."
         )
 
     if not offer_id and not product_id:
@@ -232,7 +233,8 @@ def list_prices(
     """
     if offer_id and product_id:
         raise click.BadParameter(
-            "Both '--product-id' and '--offer-id' cannot be provided at the same time."
+            "Both '--product-id' and '--offer-id' cannot be "
+            "provided at the same time."
         )
 
     if not offer_id and not product_id:
@@ -349,7 +351,8 @@ def update_prices(
     """
     if offer_id and product_id:
         raise click.BadParameter(
-            "Both '--product-id' and '--offer-id' cannot be provided at the same time."
+            "Both '--product-id' and '--offer-id' cannot be "
+            "provided at the same time."
         )
 
     if not offer_id and not product_id:
@@ -474,7 +477,8 @@ def list_countries(
     """
     if offer_id and product_id:
         raise click.BadParameter(
-            "Both '--product-id' and '--offer-id' cannot be provided at the same time."
+            "Both '--product-id' and '--offer-id' cannot be "
+            "provided at the same time."
         )
 
     if not offer_id and not product_id:
@@ -591,7 +595,8 @@ def update_countries(
     """
     if offer_id and product_id:
         raise click.BadParameter(
-            "Both '--product-id' and '--offer-id' cannot be provided at the same time."
+            "Both '--product-id' and '--offer-id' cannot be "
+            "provided at the same time."
         )
 
     if not offer_id and not product_id:

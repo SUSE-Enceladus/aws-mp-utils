@@ -169,7 +169,8 @@ def test_prices_usage_error(tmp_path):
     result = runner.invoke(main, args)
     assert result.exit_code == 2
     assert (
-        "Both '--product-id' and '--offer-id' cannot be provided at the same time."
+        "Both '--product-id' and '--offer-id' cannot be "
+        "provided at the same time."
     ) in result.output
 
     args = [
@@ -397,7 +398,8 @@ def test_countries_usage_error(tmp_path):
     result = runner.invoke(main, args)
     assert result.exit_code == 2
     assert (
-        "Both '--product-id' and '--offer-id' cannot be provided at the same time."
+        "Both '--product-id' and '--offer-id' cannot be "
+        "provided at the same time."
     ) in result.output
 
     args = [
