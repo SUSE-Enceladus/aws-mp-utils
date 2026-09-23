@@ -21,6 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import logging
 import sys
 
@@ -28,11 +29,15 @@ import click
 
 from aws_mp_utils.changeset import start_mp_change_set
 from aws_mp_utils.offer import create_update_offer_change_doc
-from aws_mp_utils.product import get_public_offer_id_for_product
 from aws_mp_utils.offer_countries import (
     get_available_countries,
     create_update_targeting_change_doc
 )
+from aws_mp_utils.offer_prices import (
+    get_offer_prices,
+    create_update_pricing_change_doc
+)
+from aws_mp_utils.product import get_public_offer_id_for_product
 from aws_mp_utils.scripts.cli_utils import (
     add_options,
     get_config,
@@ -177,6 +182,238 @@ def update_information(
 
     output = f'Change set Id: {response["ChangeSetId"]}'
     echo_style(output, config_data.no_color, fg='green')
+
+
+# -----------------------------------------------------------------------------
+# Offer list-prices command
+@offer.command(name='list-prices')
+@click.option(
+    '--output-file',
+    '-o',
+    type=click.Path(),
+    default=None,
+    help='Path to a file where the JSON output will be saved.'
+)
+@click.option(
+    '--product-id',
+    type=click.STRING,
+    default=None,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
+    '--offer-id',
+    type=click.STRING,
+    default=None,
+    help='The unique identifier for the offer in the AWS Marketplace.'
+)
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
+@add_options(shared_options)
+@click.pass_context
+def list_prices(
+    context,
+    output_file,
+    catalog,
+    offer_id,
+    product_id,
+    **kwargs
+):
+    """
+    Lists the pricing terms for the given offer or product.
+    """
+    if not offer_id and not product_id:
+        raise click.BadParameter(
+            "One of ['--product-id', '--offer-id'] parameters is required."
+        )
+
+    try:
+        process_shared_options(context.obj, kwargs)
+        config_data = get_config(context.obj)
+        logger = logging.getLogger('aws_mp_utils')
+        logger.setLevel(config_data.log_level)
+
+        client = get_mp_client(
+            config_data.profile,
+            config_data.region
+        )
+
+        terms = get_offer_prices(
+            client=client,
+            product_id=product_id,
+            offer_id=offer_id,
+            catalog=catalog
+        )
+
+        json_output = json.dumps(terms, indent=4)
+        if output_file:
+            with open(output_file, 'w') as f:
+                f.write(json_output)
+            output = f"Prices output written to {output_file}"
+            echo_style(output, config_data.no_color, fg='green')
+        else:
+            echo_style(json_output, config_data.no_color, fg='green')
+    except Exception as e:
+        output = str(e)
+        no_color = kwargs.get('no_color', False)
+        echo_style(output, no_color, fg='red')
+        sys.exit(1)
+
+
+# -----------------------------------------------------------------------------
+# Offer update-prices command
+@offer.command(name='update-prices')
+@click.option(
+    '--max-rechecks',
+    type=click.IntRange(min=0),
+    help='The maximum number of checks that are performed when a marketplace '
+         'change cannot be applied because some resource is affected by some '
+         'other ongoing change.'
+)
+@click.option(
+    '--conflict-wait-period',
+    type=click.IntRange(min=0),
+    help='The period (in seconds) that is waited between checks for the '
+         'ongoing mp change to be finished.'
+)
+@click.option(
+    '--product-id',
+    type=click.STRING,
+    default=None,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
+    '--offer-id',
+    type=click.STRING,
+    default=None,
+    help='The unique identifier for the offer in the AWS Marketplace.'
+)
+@click.option(
+    '--pricing-model',
+    type=click.Choice(['Contract', 'Usage', 'Byol', 'Free']),
+    default='Usage',
+    help='Indicates which pricing model the offer uses.'
+)
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
+@click.option(
+    '--details-document',
+    '--terms',
+    'details_document',
+    type=click.STRING,
+    default=None,
+    help='A JSON formatted string containing the pricing details or terms.'
+)
+@click.option(
+    '--details-document-file',
+    '--terms-file',
+    'details_document_file',
+    type=click.STRING,
+    default=None,
+    help='A path to a file containing a JSON formatted string with the '
+         'pricing details or terms.'
+)
+@add_options(shared_options)
+@click.pass_context
+def update_prices(
+    context,
+    details_document_file,
+    details_document,
+    catalog,
+    pricing_model,
+    offer_id,
+    product_id,
+    conflict_wait_period,
+    max_rechecks,
+    **kwargs
+):
+    """
+    Updates the pricing terms for the given offer or product.
+    """
+    if not offer_id and not product_id:
+        raise click.BadParameter(
+            "One of ['--product-id', '--offer-id'] parameters is required."
+        )
+
+    if details_document is not None:
+        try:
+            json.loads(details_document)
+        except json.JSONDecodeError as e:
+            raise click.BadParameter(
+                f"Invalid JSON provided for --details-document: {e}"
+            )
+    elif details_document_file is not None:
+        try:
+            with open(details_document_file, 'r') as f:
+                details_document = f.read()
+                json.loads(details_document)
+        except json.JSONDecodeError as e:
+            raise click.BadParameter(
+                f"Invalid JSON provided in file --details-document-file: {e}"
+            )
+        except FileNotFoundError as e:
+            raise click.BadParameter(
+                f"File --details-document-file not found: {e}"
+            )
+    else:
+        raise click.BadParameter(
+            "One of ['--details-document-file', "
+            "'--details-document'] parameters is required to update "
+            "prices in an offer."
+        )
+
+    try:
+        process_shared_options(context.obj, kwargs)
+        config_data = get_config(context.obj)
+        logger = logging.getLogger('aws_mp_utils')
+        logger.setLevel(config_data.log_level)
+
+        client = get_mp_client(
+            config_data.profile,
+            config_data.region
+        )
+
+        if not offer_id:
+            offer_id = get_public_offer_id_for_product(
+                client=client,
+                product_id=product_id,
+                catalog=catalog
+            )
+
+        change_set_doc = create_update_pricing_change_doc(
+            offer_id=offer_id,
+            details_document=details_document,
+            pricing_model=pricing_model
+        )
+
+        options = {
+            'client': client,
+            'change_set': [change_set_doc],
+            'catalog': catalog
+        }
+
+        if max_rechecks:
+            options['max_rechecks'] = max_rechecks
+        if conflict_wait_period:
+            options['conflict_wait_period'] = conflict_wait_period
+
+        with handle_errors(config_data.log_level, config_data.no_color):
+            response = start_mp_change_set(**options)
+
+        output = f'Change set Id: {response["ChangeSetId"]}'
+        echo_style(output, config_data.no_color, fg='green')
+    except Exception as e:
+        output = str(e)
+        no_color = kwargs.get('no_color', False)
+        echo_style(output, no_color, fg='red')
+        sys.exit(1)
 
 
 # -----------------------------------------------------------------------------
