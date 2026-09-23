@@ -63,15 +63,15 @@ def get_available_instance_types(
 def create_restrict_instance_types_change_doc(
     product_id: str,
     instance_types: list[str],
-    entity_type: str = 'Product@1.0',
+    entity_type: str = 'AmiProduct@1.0',
 ) -> dict:
     """Creates an update product request dict to restrict instance types.
 
     :param product_id: The unique identifier of product in AWS Marketplace.
     :param instance_types: A list of instance types for restriction in the
         product.
-    :param entity_type: Product entity type (e.g. Product@1.0,
-        SaaSProduct@1.0, ContainerProduct@1.0 or AmiProduct@1.0).
+    :param entity_type: Product entity type (e.g. AmiProduct@1.0,
+        SaaSProduct@1.0, ContainerProduct@1.0 or Product@1.0).
     """
     data = {
         'ChangeType': "RestrictInstanceTypes",
@@ -89,15 +89,15 @@ def create_restrict_instance_types_change_doc(
 def create_add_instance_types_change_doc(
     product_id: str,
     instance_types: list[str],
-    entity_type: str = 'Product@1.0',
+    entity_type: str = 'AmiProduct@1.0',
 ) -> dict:
     """Creates an update product request dict to add instance types.
 
     :param product_id: The unique identifier of product in AWS Marketplace.
     :param instance_types: A list of instance types for addition in the
         product.
-    :param entity_type: Product entity type (e.g. Product@1.0,
-        SaaSProduct@1.0, ContainerProduct@1.0 or AmiProduct@1.0).
+    :param entity_type: Product entity type (e.g. AmiProduct@1.0,
+        SaaSProduct@1.0, ContainerProduct@1.0 or Product@1.0).
     """
     data = {
         'ChangeType': "AddInstanceTypes",
