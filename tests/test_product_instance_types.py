@@ -40,7 +40,7 @@ def test_create_restrict_instance_types_change_doc():
     expected = {
         'ChangeType': 'RestrictInstanceTypes',
         'Entity': {
-            'Type': 'Product@1.0',
+            'Type': 'AmiProduct@1.0',
             'Identifier': '123456789'
         },
         'DetailsDocument': {
@@ -60,7 +60,7 @@ def test_create_add_instance_types_change_doc():
     expected = {
         'ChangeType': 'AddInstanceTypes',
         'Entity': {
-            'Type': 'Product@1.0',
+            'Type': 'AmiProduct@1.0',
             'Identifier': '123456789'
         },
         'DetailsDocument': {
