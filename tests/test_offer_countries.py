@@ -130,3 +130,19 @@ def test_create_update_targeting_change_doc():
         }
     }
     assert doc == expected
+
+
+def test_get_available_countries_both_ids():
+    """Confirm exception raised when both product_id and offer_id given"""
+    mock_client = MagicMock()
+    with pytest.raises(AWSMPUtilsException) as exc_info:
+        get_available_countries(
+            client=mock_client,
+            product_id='prod-12345',
+            offer_id='offer-12345'
+        )
+    msg = (
+        "Both 'product_id' and 'offer_id' cannot be "
+        "provided at the same time."
+    )
+    assert msg in str(exc_info.value)

@@ -279,6 +279,19 @@ def test_submit_change_set_version_details(
 def test_submit_change_set_usage_error(tmp_path):
     """Confirm change-set submit usage error"""
     args = [
+        'change-set', 'submit',
+        '--product-id', 'prod-12345',
+        '--offer-id', 'offer-12345'
+    ]
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert (
+        "Both '--product-id' and '--offer-id' cannot be "
+        "provided at the same time."
+    ) in result.output
+
+    args = [
         'change-set', 'submit'
     ]
     runner = CliRunner()

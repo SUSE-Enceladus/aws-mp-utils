@@ -136,6 +136,12 @@ def update_information(
     If the conflicting change set is not resolved in time an exception
     is raised.
     """
+    if offer_id and product_id:
+        raise click.BadParameter(
+            "Both '--product-id' and '--offer-id' cannot be "
+            "provided at the same time."
+        )
+
     if not offer_id and not product_id:
         raise click.BadParameter(
             "One of ['--product-id', '--offer-id'] parameters is required."
@@ -225,6 +231,12 @@ def list_prices(
     """
     Lists the pricing terms for the given offer or product.
     """
+    if offer_id and product_id:
+        raise click.BadParameter(
+            "Both '--product-id' and '--offer-id' cannot be "
+            "provided at the same time."
+        )
+
     if not offer_id and not product_id:
         raise click.BadParameter(
             "One of ['--product-id', '--offer-id'] parameters is required."
@@ -337,6 +349,12 @@ def update_prices(
     """
     Updates the pricing terms for the given offer or product.
     """
+    if offer_id and product_id:
+        raise click.BadParameter(
+            "Both '--product-id' and '--offer-id' cannot be "
+            "provided at the same time."
+        )
+
     if not offer_id and not product_id:
         raise click.BadParameter(
             "One of ['--product-id', '--offer-id'] parameters is required."
@@ -457,6 +475,12 @@ def list_countries(
     """
     Lists the available target countries for the given offer or product.
     """
+    if offer_id and product_id:
+        raise click.BadParameter(
+            "Both '--product-id' and '--offer-id' cannot be "
+            "provided at the same time."
+        )
+
     if not offer_id and not product_id:
         raise click.BadParameter(
             "One of ['--product-id', '--offer-id'] parameters is required."
@@ -569,6 +593,12 @@ def update_countries(
     """
     Sets the available target countries for the given offer or product.
     """
+    if offer_id and product_id:
+        raise click.BadParameter(
+            "Both '--product-id' and '--offer-id' cannot be "
+            "provided at the same time."
+        )
+
     if not offer_id and not product_id:
         raise click.BadParameter(
             "One of ['--product-id', '--offer-id'] parameters is required."
