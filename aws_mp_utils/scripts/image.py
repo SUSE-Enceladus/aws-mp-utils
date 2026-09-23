@@ -2,7 +2,7 @@
 
 """AWS marketplace catalog image utils cli module."""
 
-# Copyright (c) 2025 SUSE LLC
+# Copyright (c) 2026 SUSE LLC
 #
 # This file is part of aws_mp_utils. aws_mp_utils provides an
 # api and command line utilities for handling marketplace catalog API
@@ -21,6 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import logging
 import sys
 
@@ -58,6 +59,20 @@ def image():
 # Image list-versions command
 @image.command(name='list-versions')
 @click.option(
+    '--output-file',
+    '-o',
+    type=click.Path(),
+    default=None,
+    help='Path to a file where the JSON output will be saved.'
+)
+@click.option(
+    '--json',
+    'json_output_flag',
+    is_flag=True,
+    default=False,
+    help='Output the result as a formatted JSON string.'
+)
+@click.option(
     '--entity-id',
     type=click.STRING,
     required=True,
@@ -74,6 +89,8 @@ def image():
 @click.pass_context
 def list_versions(
     context,
+    json_output_flag,
+    output_file,
     catalog,
     entity_id,
     **kwargs
@@ -97,7 +114,17 @@ def list_versions(
             entity_id=entity_id,
             catalog=catalog
         )
-        if versions:
+
+        if output_file:
+            json_output = json.dumps(versions, indent=4)
+            with open(output_file, 'w') as f:
+                f.write(json_output)
+            output = f"Versions output written to {output_file}"
+            echo_style(output, config_data.no_color, fg='green')
+        elif json_output_flag:
+            json_output = json.dumps(versions, indent=4)
+            echo_style(json_output, config_data.no_color, fg='green')
+        elif versions:
             headers = (
                 f"{'Version title':<50} | "
                 f"{'AMI ID':<25} | "

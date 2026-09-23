@@ -8,7 +8,7 @@ from aws_mp_utils.scripts.cli import main
 # -------------------------------------------------
 @patch('aws_mp_utils.scripts.image.get_image_versions')
 @patch('aws_mp_utils.scripts.image.get_mp_client')
-def test_list_versions(mock_client, mock_get_image_versions):
+def test_list_versions(mock_client, mock_get_image_versions, tmp_path):
     """Confirm list image versions"""
     mock_get_image_versions.return_value = [
         {
@@ -39,6 +39,20 @@ def test_list_versions(mock_client, mock_get_image_versions):
     assert 'Version 2.0' in result.output
     assert 'ami-87654321' in result.output
     assert 'Restricted' in result.output
+
+    # Test JSON output to stdout
+    args_json = args + ['--json']
+    result = runner.invoke(main, args_json)
+    assert result.exit_code == 0
+    assert '"VersionTitle": "Version 1.0"' in result.output
+
+    # Test JSON output to file
+    out_file = tmp_path / "versions.json"
+    args_file = args + ['--output-file', str(out_file)]
+    result = runner.invoke(main, args_file)
+    assert result.exit_code == 0
+    assert out_file.exists()
+    assert '"VersionTitle": "Version 1.0"' in out_file.read_text()
 
     # No versions found
     mock_get_image_versions.return_value = []
