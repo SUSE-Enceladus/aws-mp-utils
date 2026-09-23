@@ -111,7 +111,14 @@ def get_offer_id(
 
 # -----------------------------------------------------------------------------
 # Product list-dimensions command
-@product.command
+@product.command(name='list-dimensions')
+@click.option(
+    '--output-file',
+    '-o',
+    type=click.Path(),
+    default=None,
+    help='Path to a file where the JSON output will be saved.'
+)
 @click.option(
     '--product-id',
     type=click.STRING,
@@ -128,13 +135,13 @@ def get_offer_id(
 @click.pass_context
 def list_dimensions(
     context,
+    output_file,
     catalog,
     product_id,
     **kwargs
 ):
     """
     Lists the available dimensions for the given product.
-
     """
     try:
         process_shared_options(context.obj, kwargs)
@@ -152,19 +159,15 @@ def list_dimensions(
             product_id=product_id,
             catalog=catalog
         )
-        if dimensions:
-            headers = f"{'Key':<30} | {'Unit':<10} | {'Types':<20}"
-            rows = [headers, '-' * len(headers)]
-            for dim in dimensions:
-                key = dim.get('Key', '')
-                unit = dim.get('Unit', '')
-                types = ', '.join(dim.get('Types', []))
-                rows.append(f"{key:<30} | {unit:<10} | {types:<20}")
-            output = '\n'.join(rows)
+
+        json_output = json.dumps(dimensions, indent=4)
+        if output_file:
+            with open(output_file, 'w') as f:
+                f.write(json_output)
+            output = f"Dimensions output written to {output_file}"
             echo_style(output, config_data.no_color, fg='green')
         else:
-            output = ('No dimensions were found')
-            echo_style(output, config_data.no_color, fg='red')
+            echo_style(json_output, config_data.no_color, fg='green')
     except Exception as e:
         output = str(e)
         no_color = kwargs.get('no_color', False)
@@ -195,6 +198,17 @@ def list_dimensions(
     help='The unique identifier for the product in the AWS Marketplace.'
 )
 @click.option(
+    '--entity-type',
+    type=click.Choice([
+        'AmiProduct@1.0',
+        'SaaSProduct@1.0',
+        'ContainerProduct@1.0',
+        'Product@1.0'
+    ]),
+    default='AmiProduct@1.0',
+    help='The entity type of the product.'
+)
+@click.option(
     '--catalog',
     type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
     default='AWSMarketplace',
@@ -223,6 +237,7 @@ def restrict_dimensions(
     details_document_file,
     details_document,
     catalog,
+    entity_type,
     product_id,
     conflict_wait_period,
     max_rechecks,
@@ -272,7 +287,8 @@ def restrict_dimensions(
 
         change_set_doc = create_restrict_dimensions_change_doc(
             product_id=product_id,
-            details_document=details_document
+            details_document=details_document,
+            entity_type=entity_type
         )
 
         # Change set submission
@@ -321,6 +337,17 @@ def restrict_dimensions(
     help='The unique identifier for the product in the AWS Marketplace.'
 )
 @click.option(
+    '--entity-type',
+    type=click.Choice([
+        'AmiProduct@1.0',
+        'SaaSProduct@1.0',
+        'ContainerProduct@1.0',
+        'Product@1.0'
+    ]),
+    default='AmiProduct@1.0',
+    help='The entity type of the product.'
+)
+@click.option(
     '--catalog',
     type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
     default='AWSMarketplace',
@@ -349,6 +376,7 @@ def add_dimensions(
     details_document_file,
     details_document,
     catalog,
+    entity_type,
     product_id,
     conflict_wait_period,
     max_rechecks,
@@ -398,7 +426,8 @@ def add_dimensions(
 
         change_set_doc = create_add_dimensions_change_doc(
             product_id=product_id,
-            details_document=details_document
+            details_document=details_document,
+            entity_type=entity_type
         )
 
         # Change set submission
