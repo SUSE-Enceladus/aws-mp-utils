@@ -153,7 +153,19 @@ def test_merge_change_sets(tmp_path):
     assert 't3.medium' in content
     assert 'UpdatePricingTerms' in content
 
-    # Test invalid JSON format
+    # Test invalid JSON syntax
+    file_bad_syntax = tmp_path / "bad_syntax.json"
+    file_bad_syntax.write_text('{invalid_json}')
+    args_bad_syntax = [
+        'change-set', 'merge',
+        '-f', str(file_bad_syntax),
+        '--no-color'
+    ]
+    result = runner.invoke(main, args_bad_syntax)
+    assert result.exit_code == 1
+    assert 'Invalid JSON provided in file' in result.output
+
+    # Test invalid JSON structure
     file_invalid = tmp_path / "invalid.json"
     file_invalid.write_text('"just a string"')
     args_invalid = [
@@ -167,29 +179,37 @@ def test_merge_change_sets(tmp_path):
 
 
 # -------------------------------------------------
-@patch('aws_mp_utils.scripts.change_set.get_public_offer_id_for_product')
 @patch('aws_mp_utils.scripts.change_set.start_mp_change_set')
 @patch('aws_mp_utils.scripts.change_set.get_mp_client')
 def test_submit_change_set(
     mock_client,
-    mock_start_change_set,
-    mock_get_offer_id
+    mock_start_change_set
 ):
     """Confirm submit change set"""
-    mock_get_offer_id.return_value = 'offer-12345'
     mock_start_change_set.return_value = {
         'ChangeSetId': '123456789'
     }
 
     cs_json = json.dumps([
-        {"ChangeType": "AddDimensions", "Entity": {"Type": "AmiProduct@1.0"}},
-        {"ChangeType": "UpdatePricingTerms", "Entity": {"Type": "Offer@1.0"}}
+        {
+            "ChangeType": "AddDimensions",
+            "Entity": {
+                "Type": "AmiProduct@1.0",
+                "Identifier": "prod-12345"
+            }
+        },
+        {
+            "ChangeType": "UpdatePricingTerms",
+            "Entity": {
+                "Type": "Offer@1.0",
+                "Identifier": "offer-12345"
+            }
+        }
     ])
 
     args = [
         'change-set', 'submit',
         '--config-file', 'tests/data/config.yaml',
-        '--product-id', 'prod-12345',
         '--change-set', cs_json,
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
@@ -211,50 +231,32 @@ def test_submit_change_set(
 # -------------------------------------------------
 @patch('aws_mp_utils.scripts.change_set.start_mp_change_set')
 @patch('aws_mp_utils.scripts.change_set.get_mp_client')
-def test_submit_change_set_version_details(
+def test_submit_change_set_from_file(
     mock_client,
     mock_start_change_set,
     tmp_path
 ):
-    """Confirm submit change set with version details file"""
+    """Confirm submit change set from file"""
     mock_start_change_set.return_value = {
         'ChangeSetId': '123456789'
     }
 
-    version_file = tmp_path / "versions.json"
-    version_file.write_text(json.dumps([
+    cs_file = tmp_path / "changeset.json"
+    cs_file.write_text(json.dumps([
         {
-            "VersionTitle": "Version 1.0",
-            "ReleaseNotes": "Release notes",
-            "Sources": [{
-                "Image": "ami-12345678",
-                "OperatingSystem": {
-                    "Name": "SUSE",
-                    "Version": "16.0",
-                    "Username": "ec2-user"
-                }
-            }],
-            "DeliveryOptions": [{
-                "Instructions": {"Usage": "Usage instructions"},
-                "Recommendations": {
-                    "InstanceType": "r7i.8xlarge",
-                    "SecurityGroups": [{
-                        "FromPort": 22,
-                        "ToPort": 22,
-                        "Protocol": "tcp",
-                        "CidrIps": ["0.0.0.0/0"]
-                    }]
-                }
-            }]
+            "ChangeType": "AddDeliveryOptions",
+            "Entity": {
+                "Type": "AmiProduct@1.0",
+                "Identifier": "prod-12345"
+            },
+            "DetailsDocument": {"Version": {"VersionTitle": "Version 1.0"}}
         }
     ]))
 
     args = [
         'change-set', 'submit',
         '--config-file', 'tests/data/config.yaml',
-        '--product-id', 'prod-12345',
-        '--access-role-arn', 'arn:aws:iam::12345:role/Role',
-        '-f', str(version_file),
+        '-f', str(cs_file),
         '--no-color'
     ]
 
@@ -262,18 +264,6 @@ def test_submit_change_set_version_details(
     result = runner.invoke(main, args)
     assert result.exit_code == 0
     assert 'Change set Id: 123456789' in result.output
-
-    # Test error when --access-role-arn is missing
-    args_no_role = [
-        'change-set', 'submit',
-        '--config-file', 'tests/data/config.yaml',
-        '--product-id', 'prod-12345',
-        '-f', str(version_file),
-        '--no-color'
-    ]
-    result = runner.invoke(main, args_no_role)
-    assert result.exit_code == 1
-    assert "Parameter '--access-role-arn' is required" in result.output
 
 
 def test_submit_change_set_usage_error(tmp_path):

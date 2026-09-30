@@ -19,7 +19,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see .
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
 import logging
@@ -32,7 +32,6 @@ from aws_mp_utils.changeset import (
     get_change_set_status,
     start_mp_change_set
 )
-from aws_mp_utils.product import get_public_offer_id_for_product
 from aws_mp_utils.scripts.cli_utils import (
     add_options,
     get_config,
@@ -223,16 +222,26 @@ def merge(
 
         combined_raw = []
         for file_path in files:
-            with open(file_path, 'r') as f:
-                data = json.load(f)
-                if isinstance(data, list):
-                    combined_raw.extend(data)
-                elif isinstance(data, dict):
-                    combined_raw.append(data)
-                else:
-                    raise click.BadParameter(
-                        f"Invalid JSON format in file {file_path}."
-                    )
+            try:
+                with open(file_path, 'r') as f:
+                    data = json.load(f)
+            except json.JSONDecodeError as e:
+                raise click.BadParameter(
+                    f"Invalid JSON provided in file {file_path}: {e}"
+                )
+            except FileNotFoundError as e:
+                raise click.BadParameter(
+                    f"File {file_path} not found: {e}"
+                )
+
+            if isinstance(data, list):
+                combined_raw.extend(data)
+            elif isinstance(data, dict):
+                combined_raw.append(data)
+            else:
+                raise click.BadParameter(
+                    f"Invalid JSON format in file {file_path}."
+                )
 
         change_set_list = []
         dimensions = []
@@ -421,41 +430,6 @@ def merge(
          'ongoing mp change to be finished.'
 )
 @click.option(
-    '--product-id',
-    type=click.STRING,
-    default=None,
-    help='The unique identifier for the product in the AWS Marketplace.'
-)
-@click.option(
-    '--offer-id',
-    type=click.STRING,
-    default=None,
-    help='The unique identifier for the offer in the AWS Marketplace.'
-)
-@click.option(
-    '--access-role-arn',
-    type=click.STRING,
-    default=None,
-    help='The role used by AWS Marketplace to access the provided AMI.'
-)
-@click.option(
-    '--entity-type',
-    type=click.Choice([
-        'AmiProduct@1.0',
-        'SaaSProduct@1.0',
-        'ContainerProduct@1.0',
-        'Product@1.0'
-    ]),
-    default='AmiProduct@1.0',
-    help='The product entity type when adding dimensions or delivery options.'
-)
-@click.option(
-    '--pricing-model',
-    type=click.Choice(['Contract', 'Usage', 'Byol', 'Free']),
-    default='Usage',
-    help='The pricing model when updating pricing terms.'
-)
-@click.option(
     '--catalog',
     type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
     default='AWSMarketplace',
@@ -486,11 +460,6 @@ def submit(
     change_set_file,
     change_set_doc,
     catalog,
-    pricing_model,
-    entity_type,
-    access_role_arn,
-    offer_id,
-    product_id,
     conflict_wait_period,
     max_rechecks,
     **kwargs
@@ -526,9 +495,9 @@ def submit(
         )
 
     if isinstance(raw_data, dict):
-        raw_list = [raw_data]
+        change_set_list = [raw_data]
     elif isinstance(raw_data, list):
-        raw_list = raw_data
+        change_set_list = raw_data
     else:
         raise click.BadParameter(
             "Change set payload must be a JSON object or a list of "
@@ -546,172 +515,11 @@ def submit(
             config_data.region
         )
 
-        change_set_list = []
-        dimensions = []
-        terms = []
-        instance_types = []
-
-        for item in raw_list:
-            if isinstance(item, str):
-                if item.strip():
-                    instance_types.append(item.strip())
-            elif isinstance(item, dict):
-                if 'ChangeType' in item:
-                    change_set_list.append(item)
-                elif item.get('Type', '').endswith('Term'):
-                    terms.append(item)
-                elif 'InstanceTypes' in item:
-                    types = item['InstanceTypes']
-                    if isinstance(types, list):
-                        instance_types.extend(
-                            [str(t).strip() for t in types if str(t).strip()]
-                        )
-                elif 'Sources' in item and 'DeliveryOptions' in item:
-                    if not access_role_arn:
-                        raise click.BadParameter(
-                            "Parameter '--access-role-arn' is required when "
-                            "submitting version details."
-                        )
-                    sources = item.get('Sources', [])
-                    source = sources[0] if sources else {}
-                    os_info = source.get('OperatingSystem', {})
-                    ami_id = source.get('Image', '')
-                    os_name = os_info.get('Name', '')
-                    os_version = os_info.get('Version', '')
-                    ssh_user = os_info.get('Username', 'ec2-user')
-
-                    del_opts = item.get('DeliveryOptions', [])
-                    del_opt = del_opts[0] if del_opts else {}
-                    instructions = del_opt.get('Instructions', {})
-                    usage_instructions = instructions.get('Usage', '')
-                    recs = del_opt.get('Recommendations', {})
-                    rec_instance_type = recs.get('InstanceType', '')
-                    sec_groups_raw = recs.get('SecurityGroups', [])
-
-                    sec_groups = []
-                    for sg in sec_groups_raw:
-                        ip_ranges = (
-                            sg.get('IpRanges') or
-                            sg.get('CidrIps') or
-                            ['0.0.0.0/0']
-                        )
-                        sec_groups.append({
-                            'FromPort': sg.get('FromPort', 22),
-                            'ToPort': sg.get('ToPort', 22),
-                            'IpProtocol': (
-                                sg.get('Protocol') or
-                                sg.get('IpProtocol') or
-                                'tcp'
-                            ),
-                            'IpRanges': ip_ranges
-                        })
-
-                    if not sec_groups:
-                        sec_groups = [{
-                            'FromPort': 22,
-                            'ToPort': 22,
-                            'IpProtocol': 'tcp',
-                            'IpRanges': ['0.0.0.0/0']
-                        }]
-
-                    add_del_opt_action = {
-                        'ChangeType': 'AddDeliveryOptions',
-                        'Entity': {
-                            'Type': entity_type,
-                            'Identifier': product_id or ''
-                        },
-                        'DetailsDocument': {
-                            'Version': {
-                                'VersionTitle': item.get('VersionTitle', ''),
-                                'ReleaseNotes': item.get('ReleaseNotes', '')
-                            },
-                            'DeliveryOptions': [{
-                                'Details': {
-                                    'AmiDeliveryOptionDetails': {
-                                        'UsageInstructions': (
-                                            usage_instructions
-                                        ),
-                                        'RecommendedInstanceType': (
-                                            rec_instance_type
-                                        ),
-                                        'AmiSource': {
-                                            'AmiId': ami_id,
-                                            'AccessRoleArn': access_role_arn,
-                                            'UserName': ssh_user,
-                                            'OperatingSystemName': os_name,
-                                            'OperatingSystemVersion': (
-                                                os_version
-                                            )
-                                        },
-                                        'SecurityGroups': sec_groups
-                                    }
-                                }
-                            }]
-                        }
-                    }
-                    change_set_list.append(add_del_opt_action)
-                elif 'Key' in item or 'Name' in item or 'Unit' in item:
-                    dimensions.append(item)
-
-        if instance_types:
-            change_set_list.append({
-                'ChangeType': 'AddInstanceTypes',
-                'Entity': {
-                    'Type': entity_type,
-                    'Identifier': product_id or ''
-                },
-                'DetailsDocument': {
-                    'InstanceTypes': instance_types
-                }
-            })
-
-        if dimensions:
-            change_set_list.append({
-                'ChangeType': 'AddDimensions',
-                'Entity': {
-                    'Type': entity_type,
-                    'Identifier': product_id or ''
-                },
-                'DetailsDocument': dimensions
-            })
-
-        if terms:
-            change_set_list.append({
-                'ChangeType': 'UpdatePricingTerms',
-                'Entity': {
-                    'Type': 'Offer@1.0',
-                    'Identifier': offer_id or ''
-                },
-                'DetailsDocument': {
-                    'PricingModel': pricing_model,
-                    'Terms': terms
-                }
-            })
-
-        resolved_offer_id = offer_id
         for action in change_set_list:
             if not isinstance(action, dict):
-                continue
-            entity = action.setdefault('Entity', {})
-            entity_type_action = entity.get('Type', '')
-
-            if 'Offer' in entity_type_action:
-                if not resolved_offer_id and product_id:
-                    resolved_offer_id = get_public_offer_id_for_product(
-                        client=client,
-                        product_id=product_id,
-                        catalog=catalog
-                    )
-                if resolved_offer_id:
-                    entity['Identifier'] = resolved_offer_id
-            else:
-                if product_id and not entity.get('Identifier'):
-                    entity['Identifier'] = product_id
-
-            if not entity.get('Identifier'):
                 raise click.BadParameter(
-                    "One of ['--product-id', '--offer-id'] parameters "
-                    "is required."
+                    "Change set payload must contain valid change set action "
+                    "objects."
                 )
 
         options = {
