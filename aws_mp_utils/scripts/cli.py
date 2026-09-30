@@ -21,28 +21,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import json
-import logging
-
 import click
 
-from aws_mp_utils.changeset import (
-    get_change_set,
-    get_change_set_status
-)
+from aws_mp_utils.scripts.change_set import change_set
 from aws_mp_utils.scripts.container import container
 from aws_mp_utils.scripts.image import image
 from aws_mp_utils.scripts.offer import offer
 from aws_mp_utils.scripts.product import product
-from aws_mp_utils.scripts.cli_utils import (
-    add_options,
-    get_config,
-    process_shared_options,
-    shared_options,
-    echo_style,
-    get_mp_client,
-    handle_errors
-)
 
 
 # -----------------------------------------------------------------------------
@@ -78,98 +63,7 @@ def main(context):
     pass
 
 
-# -----------------------------------------------------------------------------
-@main.command
-@click.option(
-    '--change-set-id',
-    type=click.STRING,
-    required=True,
-    help='The unique identifier for the change set that you want to describe.'
-)
-@click.option(
-    '--catalog',
-    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
-    default='AWSMarketplace',
-    help='The catalog related to the request.'
-)
-@add_options(shared_options)
-@click.pass_context
-def describe_change_set(
-    context,
-    catalog,
-    change_set_id,
-    **kwargs
-):
-    """
-    Returns a json dictionary with info about the given changeset.
-    """
-    process_shared_options(context.obj, kwargs)
-    config_data = get_config(context.obj)
-    logger = logging.getLogger('aws_mp_utils')
-    logger.setLevel(config_data.log_level)
-
-    client = get_mp_client(
-        config_data.profile,
-        config_data.region
-    )
-
-    with handle_errors(config_data.log_level, config_data.no_color):
-        change_set = get_change_set(client, change_set_id, catalog)
-
-    echo_style(json.dumps(change_set), config_data.no_color, fg='green')
-
-
-# -----------------------------------------------------------------------------
-@main.command(name='get-change-set-status')
-@click.option(
-    '--change-set-id',
-    type=click.STRING,
-    required=True,
-    help='The unique identifier for the change set that you want to describe.'
-)
-@click.option(
-    '--catalog',
-    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
-    default='AWSMarketplace',
-    help='The catalog related to the request.'
-)
-@add_options(shared_options)
-@click.pass_context
-def describe_change_set_status(
-    context,
-    catalog,
-    change_set_id,
-    **kwargs
-):
-    """
-    Returns a string value of the given change set status.
-
-    Possible status values are:
-        'PREPARING'|'APPLYING'|'SUCCEEDED'|'CANCELLED'|'FAILED'
-    """
-    process_shared_options(context.obj, kwargs)
-    config_data = get_config(context.obj)
-    logger = logging.getLogger('aws_mp_utils')
-    logger.setLevel(config_data.log_level)
-
-    client = get_mp_client(
-        config_data.profile,
-        config_data.region
-    )
-
-    with handle_errors(config_data.log_level, config_data.no_color):
-        status = get_change_set_status(client, change_set_id, catalog)
-
-    if status in ('preparing', 'applying'):
-        color = 'yellow'
-    elif status in ('cancelled', 'failed'):
-        color = 'red'
-    else:
-        color = 'green'
-
-    echo_style(status, config_data.no_color, fg=color)
-
-
+main.add_command(change_set)
 main.add_command(image)
 main.add_command(container)
 main.add_command(offer)
