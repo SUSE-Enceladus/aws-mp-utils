@@ -320,7 +320,8 @@ def test_dimensions_usage_error(tmp_path):
 @patch('aws_mp_utils.scripts.product.get_mp_client')
 def test_list_instance_types(
     mock_client,
-    mock_get_available_instance_types
+    mock_get_available_instance_types,
+    tmp_path
 ):
     """Confirm list available instance types"""
     mock_get_available_instance_types.return_value = [
@@ -340,6 +341,28 @@ def test_list_instance_types(
     assert result.exit_code == 0
     assert 't3.medium' in result.output
     assert 'u-3tb1.56xlarge' in result.output
+
+    # Test JSON output to stdout
+    args_json = args + ['--json']
+    result = runner.invoke(main, args_json)
+    assert result.exit_code == 0
+    assert '"t3.medium"' in result.output
+
+    # Test JSON output to file via --output-file
+    out_file = tmp_path / "instance_types.json"
+    args_file = args + ['--output-file', str(out_file)]
+    result = runner.invoke(main, args_file)
+    assert result.exit_code == 0
+    assert out_file.exists()
+    assert '"t3.medium"' in out_file.read_text()
+
+    # Test JSON output to file via -o short option
+    out_file_short = tmp_path / "instance_types_short.json"
+    args_file_short = args + ['-o', str(out_file_short)]
+    result = runner.invoke(main, args_file_short)
+    assert result.exit_code == 0
+    assert out_file_short.exists()
+    assert '"t3.medium"' in out_file_short.read_text()
 
     # No available instance types found
     mock_get_available_instance_types.return_value = []

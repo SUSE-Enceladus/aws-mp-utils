@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 
 from click.testing import CliRunner
@@ -217,7 +218,8 @@ def test_prices_usage_error(tmp_path):
 @patch('aws_mp_utils.scripts.offer.get_mp_client')
 def test_list_countries(
     mock_client,
-    mock_get_available_countries
+    mock_get_available_countries,
+    tmp_path
 ):
     """Confirm list available countries"""
     mock_get_available_countries.return_value = [
@@ -235,6 +237,14 @@ def test_list_countries(
     result = runner.invoke(main, args)
     assert result.exit_code == 0
     assert 'DE,FR,US' in result.output
+
+    # Test output to file
+    out_file = tmp_path / "countries.json"
+    args_file = args + ['-o', str(out_file)]
+    result = runner.invoke(main, args_file)
+    assert result.exit_code == 0
+    assert out_file.exists()
+    assert json.loads(out_file.read_text()) == ["DE", "FR", "US"]
 
     # No available countries found
     mock_get_available_countries.return_value = []

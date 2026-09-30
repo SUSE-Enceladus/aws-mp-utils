@@ -457,6 +457,20 @@ def add_dimensions(
 # Product list-instance-types command
 @product.command(name='list-instance-types')
 @click.option(
+    '--output-file',
+    '-o',
+    type=click.Path(),
+    default=None,
+    help='Path to a file where the JSON output will be saved.'
+)
+@click.option(
+    '--json',
+    'json_output_flag',
+    is_flag=True,
+    default=False,
+    help='Output the result as a formatted JSON string.'
+)
+@click.option(
     '--product-id',
     type=click.STRING,
     required=True,
@@ -472,6 +486,8 @@ def add_dimensions(
 @click.pass_context
 def list_instance_types(
     context,
+    json_output_flag,
+    output_file,
     catalog,
     product_id,
     **kwargs
@@ -496,7 +512,17 @@ def list_instance_types(
             product_id=product_id,
             catalog=catalog
         )
-        if instance_types:
+
+        if output_file:
+            json_output = json.dumps(instance_types, indent=4)
+            with open(output_file, 'w') as f:
+                f.write(json_output)
+            output = f"Instance types output written to {output_file}"
+            echo_style(output, config_data.no_color, fg='green')
+        elif json_output_flag:
+            json_output = json.dumps(instance_types, indent=4)
+            echo_style(json_output, config_data.no_color, fg='green')
+        elif instance_types:
             headers = f"{'Instance type':<30}"
             rows = [headers, '-' * len(headers)]
             for instance_type in instance_types:
