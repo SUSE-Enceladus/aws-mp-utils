@@ -243,6 +243,7 @@ def merge(
         dimensions = []
         terms = []
         instance_types = []
+        regions = []
 
         for item in combined_raw:
             if isinstance(item, str):
@@ -258,6 +259,17 @@ def merge(
                     if isinstance(types, list):
                         instance_types.extend(
                             [str(t).strip() for t in types if str(t).strip()]
+                        )
+                elif 'Regions' in item or 'RegionAvailability' in item:
+                    regs = (
+                        item.get('Regions')
+                        or item.get(
+                            'RegionAvailability', {}
+                        ).get('Regions', [])
+                    )
+                    if isinstance(regs, list):
+                        regions.extend(
+                            [str(r).strip() for r in regs if str(r).strip()]
                         )
                 elif 'Sources' in item and 'DeliveryOptions' in item:
                     if not access_role_arn:
@@ -355,6 +367,18 @@ def merge(
                 },
                 'DetailsDocument': {
                     'InstanceTypes': instance_types
+                }
+            })
+
+        if regions:
+            change_set_list.append({
+                'ChangeType': 'AddRegions',
+                'Entity': {
+                    'Type': entity_type,
+                    'Identifier': product_id or ''
+                },
+                'DetailsDocument': {
+                    'Regions': regions
                 }
             })
 
@@ -560,6 +584,7 @@ def submit(
         dimensions = []
         terms = []
         instance_types = []
+        regions = []
 
         for item in raw_list:
             if isinstance(item, str):
@@ -575,6 +600,17 @@ def submit(
                     if isinstance(types, list):
                         instance_types.extend(
                             [str(t).strip() for t in types if str(t).strip()]
+                        )
+                elif 'Regions' in item or 'RegionAvailability' in item:
+                    regs = (
+                        item.get('Regions')
+                        or item.get(
+                            'RegionAvailability', {}
+                        ).get('Regions', [])
+                    )
+                    if isinstance(regs, list):
+                        regions.extend(
+                            [str(r).strip() for r in regs if str(r).strip()]
                         )
                 elif 'Sources' in item and 'DeliveryOptions' in item:
                     if not access_role_arn:
@@ -675,6 +711,18 @@ def submit(
                 }
             })
 
+        if regions:
+            change_set_list.append({
+                'ChangeType': 'AddRegions',
+                'Entity': {
+                    'Type': entity_type,
+                    'Identifier': product_id or ''
+                },
+                'DetailsDocument': {
+                    'Regions': regions
+                }
+            })
+
         if dimensions:
             change_set_list.append({
                 'ChangeType': 'AddDimensions',
@@ -704,21 +752,25 @@ def submit(
                 continue
             entity = action.setdefault('Entity', {})
             entity_type_action = entity.get('Type', '')
+            change_type_action = action.get('ChangeType', '')
 
             if 'Offer' in entity_type_action:
-                if not resolved_offer_id and product_id:
-                    resolved_offer_id = get_public_offer_id_for_product(
-                        client=client,
-                        product_id=product_id,
-                        catalog=catalog
-                    )
-                if resolved_offer_id:
-                    entity['Identifier'] = resolved_offer_id
+                if (change_type_action != 'CreateOffer' and
+                        not entity.get('Identifier')):
+                    if not resolved_offer_id and product_id:
+                        resolved_offer_id = get_public_offer_id_for_product(
+                            client=client,
+                            product_id=product_id,
+                            catalog=catalog
+                        )
+                    if resolved_offer_id:
+                        entity['Identifier'] = resolved_offer_id
             else:
                 if product_id and not entity.get('Identifier'):
                     entity['Identifier'] = product_id
 
-            if not entity.get('Identifier'):
+            if (not entity.get('Identifier') and
+                    change_type_action != 'CreateOffer'):
                 raise click.BadParameter(
                     "One of ['--product-id', '--offer-id'] parameters "
                     "is required."
