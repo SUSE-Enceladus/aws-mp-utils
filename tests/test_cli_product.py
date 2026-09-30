@@ -641,3 +641,335 @@ def test_instance_types_usage_error(tmp_path):
     assert result.exit_code == 2
     assert ("Invalid JSON provided in file "
             "--details-document-file:") in result.output
+
+
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.product.get_available_regions')
+@patch('aws_mp_utils.scripts.product.get_mp_client')
+def test_list_regions(
+    mock_client,
+    mock_get_available_regions,
+    tmp_path
+):
+    """Confirm list available regions"""
+    mock_get_available_regions.return_value = {
+        "Regions": [
+            "us-east-1",
+            "us-west-2"
+        ],
+        "FutureRegionSupport": {
+            "SupportedRegions": ["All"]
+        }
+    }
+
+    args = [
+        'product', 'list-regions',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'us-east-1' in result.output
+    assert 'us-west-2' in result.output
+
+    # Test JSON output to stdout
+    args_json = args + ['--json']
+    result = runner.invoke(main, args_json)
+    assert result.exit_code == 0
+    assert '"us-east-1"' in result.output
+
+    # Test JSON output to file via --output-file
+    out_file = tmp_path / "regions.json"
+    args_file = args + ['--output-file', str(out_file)]
+    result = runner.invoke(main, args_file)
+    assert result.exit_code == 0
+    assert out_file.exists()
+    assert '"us-east-1"' in out_file.read_text()
+
+    # Test JSON output to file via -o short option
+    out_file_short = tmp_path / "regions_short.json"
+    args_file_short = args + ['-o', str(out_file_short)]
+    result = runner.invoke(main, args_file_short)
+    assert result.exit_code == 0
+    assert out_file_short.exists()
+    assert '"us-east-1"' in out_file_short.read_text()
+
+    # No available regions found
+    mock_get_available_regions.return_value = {"Regions": []}
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'No available regions were found' in result.output
+
+    # Failure
+    mock_get_available_regions.side_effect = Exception('Some error')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert 'Some error' in result.output
+
+
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.product.start_mp_change_set')
+@patch('aws_mp_utils.scripts.product.get_mp_client')
+def test_restrict_regions(
+    mock_client,
+    mock_start_change_set
+):
+    """Confirm restrict product regions"""
+    mock_start_change_set.return_value = {
+        'ChangeSetId': '123456789'
+    }
+
+    args = [
+        'product', 'restrict-regions',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--regions', 'us-east-1,us-west-2',
+        '--entity-type', 'AmiProduct@1.0',
+        '--max-rechecks', '10',
+        '--conflict-wait-period', '300',
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+    # Check that AmiProduct@1.0 was passed as Entity Type
+    call_kwargs = mock_start_change_set.call_args.kwargs
+    cs_doc = call_kwargs['change_set'][0]
+    assert cs_doc['Entity']['Type'] == 'AmiProduct@1.0'
+
+    # Test with --details-document
+    args_doc = [
+        'product', 'restrict-regions',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--details-document', '["us-east-1", "us-west-2"]',
+        '--no-color'
+    ]
+    result = runner.invoke(main, args_doc)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+    # Failure to start changeset
+    mock_start_change_set.side_effect = Exception('Invalid change set!')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert 'Invalid change set!' in result.output
+
+    # Simulate failure in boto3 (outer exception block)
+    mock_client.side_effect = Exception('403: Auth failure!')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert '403: Auth failure!' in result.output
+
+
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.product.start_mp_change_set')
+@patch('aws_mp_utils.scripts.product.get_mp_client')
+def test_add_regions(
+    mock_client,
+    mock_start_change_set
+):
+    """Confirm add product regions"""
+    mock_start_change_set.return_value = {
+        'ChangeSetId': '123456789'
+    }
+
+    args = [
+        'product', 'add-regions',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--regions', 'us-east-1,us-west-2',
+        '--entity-type', 'AmiProduct@1.0',
+        '--max-rechecks', '10',
+        '--conflict-wait-period', '300',
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+    # Check that AmiProduct@1.0 was passed as Entity Type
+    call_kwargs = mock_start_change_set.call_args.kwargs
+    cs_doc = call_kwargs['change_set'][0]
+    assert cs_doc['Entity']['Type'] == 'AmiProduct@1.0'
+
+    # Test with --details-document
+    args_doc = [
+        'product', 'add-regions',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--details-document', '["us-east-1", "us-west-2"]',
+        '--no-color'
+    ]
+    result = runner.invoke(main, args_doc)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+    # Failure to start changeset
+    mock_start_change_set.side_effect = Exception('Invalid change set!')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert 'Invalid change set!' in result.output
+
+    # Simulate failure in boto3 (outer exception block)
+    mock_client.side_effect = Exception('403: Auth failure!')
+    result = runner.invoke(main, args)
+    assert result.exit_code == 1
+    assert '403: Auth failure!' in result.output
+
+
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.product.start_mp_change_set')
+@patch('aws_mp_utils.scripts.product.get_mp_client')
+def test_restrict_regions_with_file(
+    mock_client,
+    mock_start_change_set,
+    tmp_path
+):
+    """Confirm restrict product regions with a file"""
+    mock_start_change_set.return_value = {
+        'ChangeSetId': '123456789'
+    }
+
+    doc_file = tmp_path / "regions.json"
+    doc_file.write_text('["us-east-1", "us-west-2"]')
+
+    args = [
+        'product', 'restrict-regions',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--details-document-file', str(doc_file),
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+    # Test with --regions-file
+    txt_file = tmp_path / "regions.txt"
+    txt_file.write_text('us-east-1, us-west-2')
+
+    args_txt = [
+        'product', 'restrict-regions',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--regions-file', str(txt_file),
+        '--no-color'
+    ]
+    result = runner.invoke(main, args_txt)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.product.start_mp_change_set')
+@patch('aws_mp_utils.scripts.product.get_mp_client')
+def test_add_regions_with_file(
+    mock_client,
+    mock_start_change_set,
+    tmp_path
+):
+    """Confirm add product regions with a file"""
+    mock_start_change_set.return_value = {
+        'ChangeSetId': '123456789'
+    }
+
+    doc_file = tmp_path / "regions.json"
+    doc_file.write_text('["us-east-1", "us-west-2"]')
+
+    args = [
+        'product', 'add-regions',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--details-document-file', str(doc_file),
+        '--no-color'
+    ]
+
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+    # Test with --regions-file
+    txt_file = tmp_path / "regions.txt"
+    txt_file.write_text('us-east-1, us-west-2')
+
+    args_txt = [
+        'product', 'add-regions',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', '123456789',
+        '--regions-file', str(txt_file),
+        '--no-color'
+    ]
+    result = runner.invoke(main, args_txt)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+
+def test_regions_usage_error(tmp_path):
+    """Confirm product regions usage error"""
+    args = [
+        'product', 'restrict-regions',
+        '--product-id', '123456789'
+    ]
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert (
+        "One of ['--details-document-file', "
+        "'--details-document'] parameters is required to restrict "
+        "regions in a product."
+    ) in result.output
+
+    args = [
+        'product', 'add-regions',
+        '--product-id', '123456789'
+    ]
+    runner = CliRunner()
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert (
+        "One of ['--details-document-file', "
+        "'--details-document'] parameters is required to add "
+        "regions in a product."
+    ) in result.output
+
+    args = [
+        'product', 'restrict-regions',
+        '--product-id', '123456789',
+        '--details-document', '{"invalid":'
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert "Invalid JSON provided for --details-document:" in result.output
+
+    args = [
+        'product', 'restrict-regions',
+        '--product-id', '123456789',
+        '--details-document-file', 'non_existing_file.json'
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert "File --details-document-file not found:" in result.output
+
+    invalid_file = tmp_path / 'invalid.json'
+    invalid_file.write_text('{"invalid":')
+    args = [
+        'product', 'restrict-regions',
+        '--product-id', '123456789',
+        '--details-document-file', str(invalid_file)
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert ("Invalid JSON provided in file "
+            "--details-document-file:") in result.output

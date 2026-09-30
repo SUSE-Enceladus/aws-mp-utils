@@ -153,6 +153,30 @@ def test_merge_change_sets(tmp_path):
     assert 't3.medium' in content
     assert 'UpdatePricingTerms' in content
 
+    # Test output to file with regions and pricing terms
+    regions_file = tmp_path / "regions.json"
+    regions_file.write_text(
+        '{"Regions": ["us-east-1", "us-west-2"], '
+        '"FutureRegionSupport": {"SupportedRegions": ["All"]}}'
+    )
+
+    out_file_regions = tmp_path / "combined_regions.json"
+    args_merge_regions = [
+        'change-set', 'merge',
+        '-f', str(regions_file),
+        '-f', str(prices_file),
+        '--product-id', 'prod-12345',
+        '-o', str(out_file_regions),
+        '--no-color'
+    ]
+    result = runner.invoke(main, args_merge_regions)
+    assert result.exit_code == 0
+    assert out_file_regions.exists()
+    content_regions = out_file_regions.read_text()
+    assert 'AddRegions' in content_regions
+    assert 'us-east-1' in content_regions
+    assert 'UpdatePricingTerms' in content_regions
+
     # Test invalid JSON format
     file_invalid = tmp_path / "invalid.json"
     file_invalid.write_text('"just a string"')

@@ -39,6 +39,11 @@ from aws_mp_utils.product_instance_types import (
     create_add_instance_types_change_doc,
     create_restrict_instance_types_change_doc
 )
+from aws_mp_utils.product_regions import (
+    get_available_regions,
+    create_add_regions_change_doc,
+    create_restrict_regions_change_doc
+)
 from aws_mp_utils.scripts.cli_utils import (
     add_options,
     get_config,
@@ -867,6 +872,470 @@ def add_instance_types(
         change_set_doc = create_add_instance_types_change_doc(
             product_id=product_id,
             instance_types=instance_types,
+            entity_type=entity_type
+        )
+
+        # Change set submission
+        options = {
+            'client': client,
+            'change_set': [change_set_doc],
+            'catalog': catalog
+        }
+
+        if max_rechecks:
+            options['max_rechecks'] = max_rechecks
+        if conflict_wait_period:
+            options['conflict_wait_period'] = conflict_wait_period
+        with handle_errors(config_data.log_level, config_data.no_color):
+            response = start_mp_change_set(**options)
+
+        output = f'Change set Id: {response["ChangeSetId"]}'
+        echo_style(output, config_data.no_color, fg='green')
+    except Exception as e:
+        output = str(e)
+        no_color = kwargs.get('no_color', False)
+        echo_style(output, no_color, fg='red')
+        sys.exit(1)
+
+
+# -----------------------------------------------------------------------------
+# Product list-regions command
+@product.command(name='list-regions')
+@click.option(
+    '--output-file',
+    '-o',
+    type=click.Path(),
+    default=None,
+    help='Path to a file where the JSON output will be saved.'
+)
+@click.option(
+    '--json',
+    'json_output_flag',
+    is_flag=True,
+    default=False,
+    help='Output the result as a formatted JSON string.'
+)
+@click.option(
+    '--product-id',
+    type=click.STRING,
+    required=True,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
+@add_options(shared_options)
+@click.pass_context
+def list_regions(
+    context,
+    json_output_flag,
+    output_file,
+    catalog,
+    product_id,
+    **kwargs
+):
+    """
+    Lists the available regions for the given product.
+
+    """
+    try:
+        process_shared_options(context.obj, kwargs)
+        config_data = get_config(context.obj)
+        logger = logging.getLogger('aws_mp_utils')
+        logger.setLevel(config_data.log_level)
+
+        client = get_mp_client(
+            config_data.profile,
+            config_data.region
+        )
+
+        regions_data = get_available_regions(
+            client=client,
+            product_id=product_id,
+            catalog=catalog
+        )
+
+        regions = regions_data.get('Regions', [])
+        future_support = regions_data.get('FutureRegionSupport')
+
+        if output_file:
+            json_output = json.dumps(regions_data, indent=4)
+            with open(output_file, 'w') as f:
+                f.write(json_output)
+            output = f"Regions output written to {output_file}"
+            echo_style(output, config_data.no_color, fg='green')
+        elif json_output_flag:
+            json_output = json.dumps(regions_data, indent=4)
+            echo_style(json_output, config_data.no_color, fg='green')
+        elif regions or future_support is not None:
+            rows = []
+            if regions:
+                headers = f"{'Region':<30}"
+                rows.extend([headers, '-' * len(headers)])
+                for region_item in regions:
+                    rows.append(f"{region_item:<30}")
+
+            if future_support and isinstance(future_support, dict):
+                supported = future_support.get('SupportedRegions', [])
+                if supported and supported != ['None']:
+                    enabled_str = "Yes"
+                    supported_str = ", ".join(supported)
+                else:
+                    enabled_str = "No"
+                    supported_str = "None"
+            else:
+                enabled_str = "No"
+                supported_str = "None"
+
+            if rows:
+                rows.append("")
+            rows.append("Future Region Support:")
+            rows.append(f"  Enabled: {enabled_str}")
+            rows.append(f"  Supported Future Regions: {supported_str}")
+
+            output = '\n'.join(rows)
+            echo_style(output, config_data.no_color, fg='green')
+        else:
+            output = ('No available regions were found')
+            echo_style(output, config_data.no_color, fg='red')
+    except Exception as e:
+        output = str(e)
+        no_color = kwargs.get('no_color', False)
+        echo_style(output, no_color, fg='red')
+        sys.exit(1)
+
+
+# -----------------------------------------------------------------------------
+# Product restrict-regions command
+@product.command(name='restrict-regions')
+@click.option(
+    '--max-rechecks',
+    type=click.IntRange(min=0),
+    help='The maximum number of checks that are performed when a marketplace '
+         'change cannot be applied because some resource is affected by some '
+         'other ongoing change.'
+)
+@click.option(
+    '--conflict-wait-period',
+    type=click.IntRange(min=0),
+    help='The period (in seconds) that is waited between checks for the '
+         'ongoing mp change to be finished.'
+)
+@click.option(
+    '--product-id',
+    type=click.STRING,
+    required=True,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
+    '--entity-type',
+    type=click.Choice([
+        'AmiProduct@1.0',
+        'SaaSProduct@1.0',
+        'ContainerProduct@1.0',
+        'Product@1.0'
+    ]),
+    default='AmiProduct@1.0',
+    help='The entity type of the product.'
+)
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
+@click.option(
+    '--details-document',
+    '--regions',
+    'details_document',
+    type=click.STRING,
+    default=None,
+    help='A JSON formatted string or comma separated list of regions '
+         'to be restricted.'
+)
+@click.option(
+    '--details-document-file',
+    '--regions-file',
+    'details_document_file',
+    type=click.STRING,
+    default=None,
+    help='A path to a file containing a JSON formatted string or comma '
+         'separated list of regions.'
+)
+@add_options(shared_options)
+@click.pass_context
+def restrict_regions(
+    context,
+    details_document_file,
+    details_document,
+    catalog,
+    entity_type,
+    product_id,
+    conflict_wait_period,
+    max_rechecks,
+    **kwargs
+):
+    """
+    Restricts the provided regions from the given product.
+
+    """
+    if details_document is not None:
+        if details_document.strip().startswith(('{', '[')):
+            try:
+                json.loads(details_document)
+            except json.JSONDecodeError as e:
+                raise click.BadParameter(
+                    f"Invalid JSON provided for --details-document: {e}"
+                )
+        raw_doc = details_document
+    elif details_document_file is not None:
+        try:
+            with open(details_document_file, 'r') as f:
+                raw_doc = f.read()
+                if (
+                    raw_doc.strip().startswith(('{', '['))
+                    or details_document_file.endswith('.json')
+                ):
+                    json.loads(raw_doc)
+        except json.JSONDecodeError as e:
+            raise click.BadParameter(
+                f"Invalid JSON provided in file --details-document-file: {e}"
+            )
+        except FileNotFoundError as e:
+            raise click.BadParameter(
+                f"File --details-document-file not found: {e}"
+            )
+    else:
+        raise click.BadParameter(
+            "One of ['--details-document-file', "
+            "'--details-document'] parameters is required to restrict "
+            "regions in a product."
+        )
+
+    try:
+        parsed = json.loads(raw_doc)
+        if isinstance(parsed, list):
+            regions = [
+                str(r).strip() for r in parsed if str(r).strip()
+            ]
+        elif isinstance(parsed, dict):
+            regions_list = (
+                parsed.get('Regions')
+                or parsed.get(
+                    'RegionAvailability', {}
+                ).get('Regions')
+            )
+            if isinstance(regions_list, list):
+                regions = [
+                    str(r).strip() for r in regions_list if str(r).strip()
+                ]
+            else:
+                regions = []
+        elif isinstance(parsed, str):
+            regions = [
+                r.strip() for r in parsed.split(',') if r.strip()
+            ]
+        else:
+            regions = []
+    except (json.JSONDecodeError, TypeError):
+        regions = [
+            r.strip() for r in raw_doc.split(',') if r.strip()
+        ]
+
+    try:
+        process_shared_options(context.obj, kwargs)
+        config_data = get_config(context.obj)
+        logger = logging.getLogger('aws_mp_utils')
+        logger.setLevel(config_data.log_level)
+
+        client = get_mp_client(
+            config_data.profile,
+            config_data.region
+        )
+
+        change_set_doc = create_restrict_regions_change_doc(
+            product_id=product_id,
+            regions=regions,
+            entity_type=entity_type
+        )
+
+        # Change set submission
+        options = {
+            'client': client,
+            'change_set': [change_set_doc],
+            'catalog': catalog
+        }
+
+        if max_rechecks:
+            options['max_rechecks'] = max_rechecks
+        if conflict_wait_period:
+            options['conflict_wait_period'] = conflict_wait_period
+        with handle_errors(config_data.log_level, config_data.no_color):
+            response = start_mp_change_set(**options)
+
+        output = f'Change set Id: {response["ChangeSetId"]}'
+        echo_style(output, config_data.no_color, fg='green')
+    except Exception as e:
+        output = str(e)
+        no_color = kwargs.get('no_color', False)
+        echo_style(output, no_color, fg='red')
+        sys.exit(1)
+
+
+# -----------------------------------------------------------------------------
+# Product add-regions command
+@product.command(name='add-regions')
+@click.option(
+    '--max-rechecks',
+    type=click.IntRange(min=0),
+    help='The maximum number of checks that are performed when a marketplace '
+         'change cannot be applied because some resource is affected by some '
+         'other ongoing change.'
+)
+@click.option(
+    '--conflict-wait-period',
+    type=click.IntRange(min=0),
+    help='The period (in seconds) that is waited between checks for the '
+         'ongoing mp change to be finished.'
+)
+@click.option(
+    '--product-id',
+    type=click.STRING,
+    required=True,
+    help='The unique identifier for the product in the AWS Marketplace.'
+)
+@click.option(
+    '--entity-type',
+    type=click.Choice([
+        'AmiProduct@1.0',
+        'SaaSProduct@1.0',
+        'ContainerProduct@1.0',
+        'Product@1.0'
+    ]),
+    default='AmiProduct@1.0',
+    help='The entity type of the product.'
+)
+@click.option(
+    '--catalog',
+    type=click.Choice(['AWSMarketplace', 'AWSMarketplace-aws-eusc']),
+    default='AWSMarketplace',
+    help='The catalog related to the request.'
+)
+@click.option(
+    '--details-document',
+    '--regions',
+    'details_document',
+    type=click.STRING,
+    default=None,
+    help='A JSON formatted string or comma separated list of regions '
+         'to be added.'
+)
+@click.option(
+    '--details-document-file',
+    '--regions-file',
+    'details_document_file',
+    type=click.STRING,
+    default=None,
+    help='A path to a file containing a JSON formatted string or comma '
+         'separated list of regions.'
+)
+@add_options(shared_options)
+@click.pass_context
+def add_regions(
+    context,
+    details_document_file,
+    details_document,
+    catalog,
+    entity_type,
+    product_id,
+    conflict_wait_period,
+    max_rechecks,
+    **kwargs
+):
+    """
+    Adds the provided regions to the given product.
+
+    """
+    if details_document is not None:
+        if details_document.strip().startswith(('{', '[')):
+            try:
+                json.loads(details_document)
+            except json.JSONDecodeError as e:
+                raise click.BadParameter(
+                    f"Invalid JSON provided for --details-document: {e}"
+                )
+        raw_doc = details_document
+    elif details_document_file is not None:
+        try:
+            with open(details_document_file, 'r') as f:
+                raw_doc = f.read()
+                if (
+                    raw_doc.strip().startswith(('{', '['))
+                    or details_document_file.endswith('.json')
+                ):
+                    json.loads(raw_doc)
+        except json.JSONDecodeError as e:
+            raise click.BadParameter(
+                f"Invalid JSON provided in file --details-document-file: {e}"
+            )
+        except FileNotFoundError as e:
+            raise click.BadParameter(
+                f"File --details-document-file not found: {e}"
+            )
+    else:
+        raise click.BadParameter(
+            "One of ['--details-document-file', "
+            "'--details-document'] parameters is required to add "
+            "regions in a product."
+        )
+
+    try:
+        parsed = json.loads(raw_doc)
+        if isinstance(parsed, list):
+            regions = [
+                str(r).strip() for r in parsed if str(r).strip()
+            ]
+        elif isinstance(parsed, dict):
+            regions_list = (
+                parsed.get('Regions')
+                or parsed.get(
+                    'RegionAvailability', {}
+                ).get('Regions')
+            )
+            if isinstance(regions_list, list):
+                regions = [
+                    str(r).strip() for r in regions_list if str(r).strip()
+                ]
+            else:
+                regions = []
+        elif isinstance(parsed, str):
+            regions = [
+                r.strip() for r in parsed.split(',') if r.strip()
+            ]
+        else:
+            regions = []
+    except (json.JSONDecodeError, TypeError):
+        regions = [
+            r.strip() for r in raw_doc.split(',') if r.strip()
+        ]
+
+    try:
+        process_shared_options(context.obj, kwargs)
+        config_data = get_config(context.obj)
+        logger = logging.getLogger('aws_mp_utils')
+        logger.setLevel(config_data.log_level)
+
+        client = get_mp_client(
+            config_data.profile,
+            config_data.region
+        )
+
+        change_set_doc = create_add_regions_change_doc(
+            product_id=product_id,
+            regions=regions,
             entity_type=entity_type
         )
 
