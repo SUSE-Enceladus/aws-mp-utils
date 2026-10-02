@@ -102,7 +102,7 @@ def test_update_prices(
         'offer', 'update-prices',
         '--config-file', 'tests/data/config.yaml',
         '--offer-id', '123456789',
-        '--details-document', '[{"Type": "UsageBasedPricingTerm"}]',
+        '--terms', '[{"Type": "UsageBasedPricingTerm"}]',
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
         '--no-color'
@@ -146,7 +146,7 @@ def test_update_prices_with_file(
         'offer', 'update-prices',
         '--config-file', 'tests/data/config.yaml',
         '--offer-id', '123456789',
-        '--details-document-file', str(doc_file),
+        '--terms-file', str(doc_file),
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
         '--no-color'
@@ -177,40 +177,39 @@ def test_prices_usage_error(tmp_path):
     result = runner.invoke(main, args)
     assert result.exit_code == 2
     assert (
-        "One of ['--details-document-file', "
-        "'--details-document'] parameters is required to update "
-        "prices in an offer."
+        "One of ['--terms-file', '--terms'] parameters is required to "
+        "update prices in an offer."
     ) in result.output
 
     args = [
         'offer', 'update-prices',
         '--offer-id', '123456789',
-        '--details-document', 'invalid_json'
+        '--terms', 'invalid_json'
     ]
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert "Invalid JSON provided for --details-document:" in result.output
+    assert "Invalid JSON provided for --terms:" in result.output
 
     args = [
         'offer', 'update-prices',
         '--offer-id', '123456789',
-        '--details-document-file', 'non_existing_file.json'
+        '--terms-file', 'non_existing_file.json'
     ]
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert "File --details-document-file not found:" in result.output
+    assert "File --terms-file not found:" in result.output
 
     invalid_file = tmp_path / 'invalid.json'
     invalid_file.write_text('invalid_json')
     args = [
         'offer', 'update-prices',
         '--offer-id', '123456789',
-        '--details-document-file', str(invalid_file)
+        '--terms-file', str(invalid_file)
     ]
     result = runner.invoke(main, args)
     assert result.exit_code == 2
-    assert "Invalid JSON provided in file --details-document-file:" \
-        in result.output
+    assert ("Invalid JSON provided in file "
+            "--terms-file:") in result.output
 
 
 # -------------------------------------------------
@@ -274,35 +273,69 @@ def test_update_countries(
         'ChangeSetId': '123456789'
     }
 
-    args = [
+    # Test with --countries
+    args_countries = [
         'offer', 'update-countries',
         '--config-file', 'tests/data/config.yaml',
         '--product-id', 'prod-123456789',
-        '--country-codes', 'US,DE,FR',
+        '--countries', 'US,DE,FR',
         '--max-rechecks', '10',
         '--conflict-wait-period', '300',
         '--no-color'
     ]
 
     runner = CliRunner()
-    result = runner.invoke(main, args)
+    result = runner.invoke(main, args_countries)
     assert result.exit_code == 0
     assert 'Change set Id: 123456789' in result.output
 
     # Failure to start changeset
     mock_start_change_set.side_effect = Exception('Invalid change set!')
-    result = runner.invoke(main, args)
+    result = runner.invoke(main, args_countries)
     assert result.exit_code == 1
     assert 'Invalid change set!' in result.output
 
     # Simulate failure in boto3 (outer exception block)
     mock_client.side_effect = Exception('403: Auth failure!')
-    result = runner.invoke(main, args)
+    result = runner.invoke(main, args_countries)
     assert result.exit_code == 1
     assert '403: Auth failure!' in result.output
 
 
-def test_countries_usage_error():
+# -------------------------------------------------
+@patch('aws_mp_utils.scripts.offer.get_public_offer_id_for_product')
+@patch('aws_mp_utils.scripts.offer.start_mp_change_set')
+@patch('aws_mp_utils.scripts.offer.get_mp_client')
+def test_update_countries_with_file(
+    mock_client,
+    mock_start_change_set,
+    mock_get_public_offer_id_for_product,
+    tmp_path
+):
+    """Confirm update offer countries with a file"""
+    mock_get_public_offer_id_for_product.return_value = 'offer-123456789'
+    mock_start_change_set.return_value = {
+        'ChangeSetId': '123456789'
+    }
+
+    # Test with --countries-file
+    txt_file = tmp_path / "countries.txt"
+    txt_file.write_text('US, DE, FR')
+
+    args_txt = [
+        'offer', 'update-countries',
+        '--config-file', 'tests/data/config.yaml',
+        '--product-id', 'prod-123456789',
+        '--countries-file', str(txt_file),
+        '--no-color'
+    ]
+    runner = CliRunner()
+    result = runner.invoke(main, args_txt)
+    assert result.exit_code == 0
+    assert 'Change set Id: 123456789' in result.output
+
+
+def test_countries_usage_error(tmp_path):
     """Confirm missing options error for countries commands"""
     args = [
         'offer', 'list-countries'
@@ -316,10 +349,40 @@ def test_countries_usage_error():
 
     args = [
         'offer', 'update-countries',
-        '--country-codes', 'US,DE'
+        '--offer-id', '123456789'
     ]
     result = runner.invoke(main, args)
     assert result.exit_code == 2
     assert (
-        "One of ['--product-id', '--offer-id'] parameters is required."
+        "One of ['--countries-file', '--countries'] parameters is "
+        "required to update countries in an offer."
     ) in result.output
+
+    args = [
+        'offer', 'update-countries',
+        '--offer-id', '123456789',
+        '--countries', '{"invalid":'
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert "Invalid JSON provided for --countries:" in result.output
+
+    args = [
+        'offer', 'update-countries',
+        '--offer-id', '123456789',
+        '--countries-file', 'non_existing_file.json'
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert "File --countries-file not found:" in result.output
+
+    invalid_file = tmp_path / 'invalid.json'
+    invalid_file.write_text('{"invalid":')
+    args = [
+        'offer', 'update-countries',
+        '--offer-id', '123456789',
+        '--countries-file', str(invalid_file)
+    ]
+    result = runner.invoke(main, args)
+    assert result.exit_code == 2
+    assert "Invalid JSON provided in file --countries-file:" in result.output
