@@ -2,7 +2,7 @@
 
 """AWS marketplace catalog offer utils cli module."""
 
-# Copyright (c) 2025 SUSE LLC
+# Copyright (c) 2026 SUSE LLC
 #
 # This file is part of aws_mp_utils. aws_mp_utils provides an
 # api and command line utilities for handling marketplace catalog API
@@ -587,11 +587,7 @@ def update_countries(
         try:
             with open(details_document_file, 'r') as f:
                 raw_doc = f.read()
-                if (
-                    raw_doc.strip().startswith(('{', '['))
-                    or details_document_file.endswith('.json')
-                ):
-                    json.loads(raw_doc)
+            json.loads(raw_doc)
         except json.JSONDecodeError as e:
             raise click.BadParameter(
                 f"Invalid JSON provided in file --details-document-file: {e}"
