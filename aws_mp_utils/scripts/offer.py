@@ -304,17 +304,13 @@ def list_prices(
     help='The catalog related to the request.'
 )
 @click.option(
-    '--details-document',
     '--terms',
-    'details_document',
     type=click.STRING,
     default=None,
     help='A JSON formatted string containing the pricing details or terms.'
 )
 @click.option(
-    '--details-document-file',
     '--terms-file',
-    'details_document_file',
     type=click.STRING,
     default=None,
     help='A path to a file containing a JSON formatted string with the '
@@ -324,8 +320,8 @@ def list_prices(
 @click.pass_context
 def update_prices(
     context,
-    details_document_file,
-    details_document,
+    terms_file,
+    terms,
     catalog,
     pricing_model,
     offer_id,
@@ -342,31 +338,30 @@ def update_prices(
             "One of ['--product-id', '--offer-id'] parameters is required."
         )
 
-    if details_document is not None:
+    if terms is not None:
         try:
-            json.loads(details_document)
+            json.loads(terms)
         except json.JSONDecodeError as e:
             raise click.BadParameter(
-                f"Invalid JSON provided for --details-document: {e}"
+                f"Invalid JSON provided for --terms: {e}"
             )
-    elif details_document_file is not None:
+    elif terms_file is not None:
         try:
-            with open(details_document_file, 'r') as f:
-                details_document = f.read()
-                json.loads(details_document)
+            with open(terms_file, 'r') as f:
+                terms = f.read()
+            json.loads(terms)
         except json.JSONDecodeError as e:
             raise click.BadParameter(
-                f"Invalid JSON provided in file --details-document-file: {e}"
+                f"Invalid JSON provided in file --terms-file: {e}"
             )
         except FileNotFoundError as e:
             raise click.BadParameter(
-                f"File --details-document-file not found: {e}"
+                f"File --terms-file not found: {e}"
             )
     else:
         raise click.BadParameter(
-            "One of ['--details-document-file', "
-            "'--details-document'] parameters is required to update "
-            "prices in an offer."
+            "One of ['--terms-file', '--terms'] parameters is required to "
+            "update prices in an offer."
         )
 
     try:
@@ -389,7 +384,7 @@ def update_prices(
 
         change_set_doc = create_update_pricing_change_doc(
             offer_id=offer_id,
-            details_document=details_document,
+            details_document=terms,
             pricing_model=pricing_model
         )
 
@@ -535,19 +530,14 @@ def list_countries(
     help='The catalog related to the request.'
 )
 @click.option(
-    '--details-document',
     '--countries',
-    '--country-codes',
-    'details_document',
     type=click.STRING,
     default=None,
     help='A JSON formatted string or comma separated list of 2-letter ISO '
          'country codes (e.g., US,DE,FR).'
 )
 @click.option(
-    '--details-document-file',
     '--countries-file',
-    'details_document_file',
     type=click.STRING,
     default=None,
     help='A path to a file containing a JSON formatted string or comma '
@@ -557,8 +547,8 @@ def list_countries(
 @click.pass_context
 def update_countries(
     context,
-    details_document_file,
-    details_document,
+    countries_file,
+    countries,
     catalog,
     offer_id,
     product_id,
@@ -574,33 +564,32 @@ def update_countries(
             "One of ['--product-id', '--offer-id'] parameters is required."
         )
 
-    if details_document is not None:
-        if details_document.strip().startswith(('{', '[')):
+    if countries is not None:
+        if countries.strip().startswith(('{', '[')):
             try:
-                json.loads(details_document)
+                json.loads(countries)
             except json.JSONDecodeError as e:
                 raise click.BadParameter(
-                    f"Invalid JSON provided for --details-document: {e}"
+                    f"Invalid JSON provided for --countries: {e}"
                 )
-        raw_doc = details_document
-    elif details_document_file is not None:
+        raw_doc = countries
+    elif countries_file is not None:
         try:
-            with open(details_document_file, 'r') as f:
+            with open(countries_file, 'r') as f:
                 raw_doc = f.read()
             json.loads(raw_doc)
         except json.JSONDecodeError as e:
             raise click.BadParameter(
-                f"Invalid JSON provided in file --details-document-file: {e}"
+                f"Invalid JSON provided in file --countries-file: {e}"
             )
         except FileNotFoundError as e:
             raise click.BadParameter(
-                f"File --details-document-file not found: {e}"
+                f"File --countries-file not found: {e}"
             )
     else:
         raise click.BadParameter(
-            "One of ['--details-document-file', "
-            "'--details-document'] parameters is required to update "
-            "countries in an offer."
+            "One of ['--countries-file', '--countries'] parameters is "
+            "required to update countries in an offer."
         )
 
     try:
