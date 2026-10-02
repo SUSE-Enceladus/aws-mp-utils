@@ -577,11 +577,16 @@ def update_countries(
         try:
             with open(countries_file, 'r') as f:
                 raw_doc = f.read()
-            json.loads(raw_doc)
-        except json.JSONDecodeError as e:
-            raise click.BadParameter(
-                f"Invalid JSON provided in file --countries-file: {e}"
-            )
+            if (
+                raw_doc.strip().startswith(('{', '['))
+                or countries_file.endswith('.json')
+            ):
+                try:
+                    json.loads(raw_doc)
+                except json.JSONDecodeError as e:
+                    raise click.BadParameter(
+                        f"Invalid JSON provided in file --countries-file: {e}"
+                    )
         except FileNotFoundError as e:
             raise click.BadParameter(
                 f"File --countries-file not found: {e}"

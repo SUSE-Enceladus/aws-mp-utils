@@ -177,7 +177,7 @@ def list_dimensions(
 
 # -----------------------------------------------------------------------------
 # Product restrict-dimensions command
-@product.command
+@product.command(name='restrict-dimensions')
 @click.option(
     '--max-rechecks',
     type=click.IntRange(min=0),
@@ -316,7 +316,7 @@ def restrict_dimensions(
 
 # -----------------------------------------------------------------------------
 # Product add-dimensions command
-@product.command
+@product.command(name='add-dimensions')
 @click.option(
     '--max-rechecks',
     type=click.IntRange(min=0),
@@ -540,7 +540,7 @@ def list_instance_types(
 
 
 # -----------------------------------------------------------------------------
-# Product restrict instance types command
+# Product restrict-instance-types command
 @product.command(name='restrict-instance-types')
 @click.option(
     '--max-rechecks',
@@ -622,11 +622,17 @@ def restrict_instance_types(
         try:
             with open(instance_types_file, 'r') as f:
                 raw_doc = f.read()
-            json.loads(raw_doc)
-        except json.JSONDecodeError as e:
-            raise click.BadParameter(
-                f"Invalid JSON provided in file --instance-types-file: {e}"
-            )
+            if (
+                raw_doc.strip().startswith(('{', '['))
+                or instance_types_file.endswith('.json')
+            ):
+                try:
+                    json.loads(raw_doc)
+                except json.JSONDecodeError as e:
+                    raise click.BadParameter(
+                        "Invalid JSON provided in file "
+                        f"--instance-types-file: {e}"
+                    )
         except FileNotFoundError as e:
             raise click.BadParameter(
                 f"File --instance-types-file not found: {e}"
@@ -791,11 +797,17 @@ def add_instance_types(
         try:
             with open(instance_types_file, 'r') as f:
                 raw_doc = f.read()
-            json.loads(raw_doc)
-        except json.JSONDecodeError as e:
-            raise click.BadParameter(
-                f"Invalid JSON provided in file --instance-types-file: {e}"
-            )
+            if (
+                raw_doc.strip().startswith(('{', '['))
+                or instance_types_file.endswith('.json')
+            ):
+                try:
+                    json.loads(raw_doc)
+                except json.JSONDecodeError as e:
+                    raise click.BadParameter(
+                        "Invalid JSON provided in file "
+                        f"--instance-types-file: {e}"
+                    )
         except FileNotFoundError as e:
             raise click.BadParameter(
                 f"File --instance-types-file not found: {e}"
