@@ -47,6 +47,12 @@ def get_available_countries(
     :return: A sorted list of 2-letter ISO country codes
         (e.g., ['DE', 'FR', 'US']).
     """
+    if product_id and offer_id:
+        raise AWSMPUtilsException(
+            "Both 'product_id' and 'offer_id' cannot be "
+            "provided at the same time."
+        )
+
     if not offer_id:
         if not product_id:
             raise AWSMPUtilsException(
